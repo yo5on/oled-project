@@ -1,19 +1,30 @@
 // =====================================================
-// EYE VARIANTS — eye expressions for SSD1306 128x64
+// EYE VARIANTS — curved OLED robot face emotions for SSD1306 128x64
 //
-// Ported from the ESP32 Eyes project (esp32-eyes-main/):
-//   - Preset_* values: copied verbatim from EyePresets.h
-//   - eyeDraw():       EyeDrawer::Draw() with u8g2 calls
-//                      replaced by Adafruit_GFX calls
-//   - eye placement, mirroring, LookAt() and blink math:
-//                      Face.cpp, Eye.cpp, LookAssistant.cpp,
-//                      EyeBlink.cpp/.h
-// Original: Copyright (c) 2023 Alastair Aitchison, Playful
-// Technology, 2020 Luis Llamas (www.luisllamas.es), AGPL-3.0.
+// Style follows the OLED Animation Maker reference character: a
+// compact face in the middle of the screen with plenty of black
+// space, small curved "capsule" eyes, curved eyelids, small curved
+// lower pieces and a small central mouth.
 //
-// No bitmaps: each variant is ~2 config pointers + flags,
-// drawn once with fillRect/fillTriangle/drawFastHLine.
+// One shape does almost everything: rfEye() draws a superellipse
+// (between an oval and a rounded rectangle: curved, slightly
+// flattened top/bottom, short straight sides, never a perfect
+// circle) column by column, so it can be
+//   - stretched / squashed      (rx, ry)
+//   - tilted                    (shear)
+//   - cut by curved upper/lower lids (top*/bot* depth + curve)
+// A bottom lid that bulges upward turns the eye into a ∩ eyelid,
+// a top lid that bulges downward makes a ∪ smile or lower piece,
+// deep lids make thin slits. Emotions deform this same geometry;
+// the animations move/close/stretch it.
+//
+// Interface used by v3.ino:
+//   EyeVariantId / EYE_VARIANT_COUNT / eyeVariants[].name
+//   eyeAnimRestart(), eyeAnimUpdate(id, force), drawEyeVariant(id)
 // Uses the global `display` from v3.ino (include after it).
+//
+// Integer-only math, so the docs/ previews are rendered from the
+// same values on a PC.
 // =====================================================
 
 #ifndef EYE_VARIANTS_H
@@ -21,706 +32,451 @@
 
 #include <Arduino.h>
 
-struct EyeConfig
-{
-	int16_t OffsetX;
-	int16_t OffsetY;
-
- 	int16_t Height;
-	int16_t Width;
-
-	float Slope_Top;
-	float Slope_Bottom;
-
-	int16_t Radius_Top;
-	int16_t Radius_Bottom;
-
-	int16_t Inverse_Radius_Top;
-	int16_t Inverse_Radius_Bottom;
-
-	int16_t Inverse_Offset_Top;
-	int16_t Inverse_Offset_Bottom;
-};
-
-// ---- Presets (verbatim from esp32-eyes-main/EyePresets.h) ----
-static const EyeConfig Preset_Normal = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 40,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 8,
-	.Radius_Bottom = 8,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Glee = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 8,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 8,
-	.Radius_Bottom = 0,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 5,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Sad = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 15,
-	.Width = 40,
-	.Slope_Top = -0.5,
-	.Slope_Bottom = 0,
-	.Radius_Top = 1,
-	.Radius_Bottom = 10,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Worried = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 25,
-	.Width = 40,
-	.Slope_Top = -0.1,
-	.Slope_Bottom = 0,
-	.Radius_Top = 6,
-	.Radius_Bottom = 10,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Worried_Alt = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 35,
-	.Width = 40,
-	.Slope_Top = -0.2,
-	.Slope_Bottom = 0,
-	.Radius_Top = 6,
-	.Radius_Bottom = 10,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Focused = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 14,
-	.Width = 40,
-	.Slope_Top = 0.2,
-	.Slope_Bottom = 0,
-	.Radius_Top = 3,
-	.Radius_Bottom = 1,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Annoyed = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 12,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 0,
-	.Radius_Bottom = 10,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Annoyed_Alt = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 5,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 0,
-	.Radius_Bottom = 4,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Frustrated = {
-	.OffsetX = 3,
-	.OffsetY = -5,
-	.Height = 12,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 0,
-	.Radius_Bottom = 10,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Sleepy = {
-	.OffsetX = 0,
-	.OffsetY = -2,
-	.Height = 14,
-	.Width = 40,
-	.Slope_Top = -0.5,
-	.Slope_Bottom = -0.5,
-	.Radius_Top = 3,
-	.Radius_Bottom = 3,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Sleepy_Alt = {
-	.OffsetX = 0,
-	.OffsetY = -2,
-	.Height = 8,
-	.Width = 40,
-	.Slope_Top = -0.5,
-	.Slope_Bottom = -0.5,
-	.Radius_Top = 3,
-	.Radius_Bottom = 3,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Suspicious = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 22,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 8,
-	.Radius_Bottom = 3,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Suspicious_Alt = {
-	.OffsetX = 0,
-	.OffsetY = -3,
-	.Height = 16,
-	.Width = 40,
-	.Slope_Top = 0.2,
-	.Slope_Bottom = 0,
-	.Radius_Top = 6,
-	.Radius_Bottom = 3,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Angry = {
-	.OffsetX = -3,
-	.OffsetY = 0,
-	.Height = 20,
-	.Width = 40,
-	.Slope_Top = 0.3,
-	.Slope_Bottom = 0,
-	.Radius_Top = 2,
-	.Radius_Bottom = 12,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Scared = {
-	.OffsetX = -3,
-	.OffsetY = 0,
-	.Height = 40,
-	.Width = 40,
-	.Slope_Top = -0.1,
-	.Slope_Bottom = 0,
-	.Radius_Top = 12,
-	.Radius_Bottom = 8,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Awe = {
-	.OffsetX = 2,
-	.OffsetY = 0,
-	.Height = 35,
-	.Width = 45,
-	.Slope_Top = -0.1,
-	.Slope_Bottom = 0.1,
-	.Radius_Top = 12,
-	.Radius_Bottom = 12,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-// ---- Variant IDs ----
+// ---- Emotion IDs ----
 enum EyeVariantId : uint8_t {
-  EYE_NEUTRAL = 0,      //  1. Neutral
-  EYE_BLINK_HIGH,       //  2. Blink (high)
-  EYE_GLEE,             //  3. Glee
-  EYE_SAD_UP,           //  4. Sad (looking up to user)
-  EYE_WORRIED,          //  5. Worried
-  EYE_FOCUSED,          //  6. Focused/Determined
-  EYE_ANNOYED,          //  7. Annoyed
-  EYE_FRUSTRATED,       //  8. Frustrated/Bored
-  EYE_SLEEPY,           //  9. Sleepy Eyes
-  EYE_SUSPICIOUS,       // 10. Suspicious
-  EYE_ANGRY,            // 11. Angry
-  EYE_SCARED,           // 12. Scared
-  EYE_AWE,              // 13. Awe
+  EYE_HAPPY = 0,        //  1. Happy
+  EYE_SAD,          //  2. Sad
+  EYE_ANGRY,        //  3. Angry
+  EYE_SLEEPY,       //  4. Sleepy
+  EYE_SURPRISED,    //  5. Surprised
+  EYE_WORRIED,      //  6. Worried
+  EYE_CONFUSED,     //  7. Confused
+  EYE_EXCITED,      //  8. Excited
+  EYE_BORED,        //  9. Bored
+  EYE_SCARED,       // 10. Scared
+  EYE_FURIOUS,      // 11. Furious
   EYE_VARIANT_COUNT
 };
 
-// look: 0 = front, +1 = LookTop(), -1 = LookBottom()  (Face.cpp)
-// blink: eyes fully closed (EyeBlink at t = 1)
-// right/left: presets as assigned in FaceExpression::GoTo_*()
 struct EyeVariant {
   const char *name;
-  const EyeConfig *right;
-  const EyeConfig *left;
-  int8_t look;
-  bool blink;
+  const char *motion;   // what the animation does (also listed in README)
 };
 
 static const EyeVariant eyeVariants[] = {
-  { "Neutral",                  &Preset_Normal,      &Preset_Normal,          0, false },
-  { "Blink (high)",             &Preset_Normal,      &Preset_Normal,         +1, true  },
-  { "Glee",                     &Preset_Glee,        &Preset_Glee,            0, false },
-  { "Sad (looking up to user)", &Preset_Sad,         &Preset_Sad,            +1, false },
-  { "Worried",                  &Preset_Worried,     &Preset_Worried_Alt,     0, false },
-  { "Focused/Determined",       &Preset_Focused,     &Preset_Focused,         0, false },
-  { "Annoyed",                  &Preset_Annoyed,     &Preset_Annoyed_Alt,     0, false },
-  { "Frustrated/Bored",         &Preset_Frustrated,  &Preset_Frustrated,      0, false },
-  { "Sleepy Eyes",              &Preset_Sleepy,      &Preset_Sleepy_Alt,      0, false },
-  { "Suspicious",               &Preset_Suspicious,  &Preset_Suspicious_Alt,  0, false },
-  { "Angry",                    &Preset_Angry,       &Preset_Angry,           0, false },
-  { "Scared",                   &Preset_Scared,      &Preset_Scared,          0, false },
-  { "Awe",                      &Preset_Awe,         &Preset_Awe,             0, false },
+  { "Happy",      "Eyes curve into ∩ eyelids over small curved lower pieces, with a bean smile; gentle bounce and mouth pulse" },
+  { "Sad",        "Eyes tilt and droop outward over curved lower pieces; slow sinking, a small tear, slow blinks; frown" },
+  { "Angry",      "Eyes tilt hard with the inner edges cut down toward the centre; they creep inward and tremble; small frown" },
+  { "Sleepy",     "Eyes become thin curved eyelids that slowly close, stay shut while a 'z' floats up and a tiny mouth snores, then reopen" },
+  { "Surprised",  "Eyes stretch taller with an overshoot every 2.4 s; small open mouth grows with them" },
+  { "Worried",    "Slightly taller, uneven eyes (left and right differ) that quiver and glance around quickly; wobbly mouth" },
+  { "Confused",   "One taller eye and one small tilted eye whose sizes and angle keep changing; tilted mouth; floating '?'" },
+  { "Excited",    "Wider eyes bouncing every 0.42 s and pulsing wider; curved grin opening and closing; sparkles" },
+  { "Bored",      "Very flat half-lidded eyes drifting slowly sideways; long slow blinks; small flat mouth" },
+  { "Scared",     "Small eyes set wider apart that tremble, pulse, dart around and blink fast; tiny nervous mouth" },
+  { "Furious",    "Strongly angled eyes with the inner edges cut down hard toward the centre; hard shaking, anger mark, jagged mouth" },
 };
 static_assert(sizeof(eyeVariants) / sizeof(eyeVariants[0]) == EYE_VARIANT_COUNT, "eyeVariants[] needs one entry per EyeVariantId");
 
-// ---- Drawing primitives (u8g2 -> Adafruit_GFX) ----
+// ---- Face layout (pixels): compact, centred, lots of black space ----
+static const int16_t RF_LX = 41;   // left eye centre x
+static const int16_t RF_RX = 87;   // right eye centre x
+static const int16_t RF_EY = 25;   // eye centre y
+static const int16_t RF_LY = 35;   // lower eye pieces, centre y
+static const int16_t RF_MX = 64;   // mouth centre x
+static const int16_t RF_MY = 40;   // mouth centre y
 
-enum EyeCornerType { EYE_T_R, EYE_T_L, EYE_B_L, EYE_B_R };
+// Half-height (per mille) of the eye shape at horizontal position i/32 from the
+// centre: superellipse |x|^2.6 + |y|^2.6 = 1 (curved, slightly flat, not a circle)
+static const int16_t RF_PROF[33] = {
+  1000, 1000, 1000, 999, 998, 997, 995, 993, 989, 986, 981, 976, 969, 962, 953, 944,
+  933, 921, 907, 892, 874, 855, 833, 809, 781, 750, 714, 673, 624, 564, 488, 377, 0
+};
 
-static void eyeHLine(int32_t x, int32_t y, int32_t w) {
-  if (w > 0) display.drawFastHLine(x, y, w, SSD1306_WHITE);
-}
+// ---- Integer math helpers ----
 
-// EyeDrawer::FillRectangle
-static void eyeFillRectangle(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color) {
-  int32_t l = min(x0, x1);
-  int32_t r = max(x0, x1);
-  int32_t t = min(y0, y1);
-  int32_t b = max(y0, y1);
-  int32_t w = r - l;
-  int32_t h = b - t;
-  if (w > 0 && h > 0) display.fillRect(l, t, w, h, color ? SSD1306_WHITE : SSD1306_BLACK);
-}
+// sin() for a quarter wave in 65 steps, scaled to 0..1000
+static const int16_t RF_SIN_Q[65] = {
+  0, 25, 49, 74, 98, 122, 147, 171, 195, 219, 243, 267, 290, 314, 337, 360,
+  383, 405, 428, 450, 471, 493, 514, 535, 556, 576, 596, 615, 634, 653, 672, 690,
+  707, 724, 741, 757, 773, 788, 803, 818, 831, 845, 858, 870, 882, 893, 904, 914,
+  924, 933, 942, 950, 957, 964, 970, 976, 981, 985, 989, 992, 995, 997, 999, 1000, 1000
+};
 
-// EyeDrawer::FillRectangularTriangle
-static void eyeFillRectangularTriangle(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t color) {
-  display.fillTriangle(x0, y0, x1, y1, x1, y0, color ? SSD1306_WHITE : SSD1306_BLACK);
-}
-
-// EyeDrawer::FillEllipseCorner
-static void eyeFillEllipseCorner(EyeCornerType corner, int16_t x0, int16_t y0, int32_t rx, int32_t ry) {
-  if (rx < 2) return;
-  if (ry < 2) return;
-  int32_t x, y;
-  int32_t rx2 = rx * rx;
-  int32_t ry2 = ry * ry;
-  int32_t fx2 = 4 * rx2;
-  int32_t fy2 = 4 * ry2;
-  int32_t s;
-
-  if (corner == EYE_T_R) {
-    for (x = 0, y = ry, s = 2 * ry2 + rx2 * (1 - 2 * ry); ry2 * x <= rx2 * y; x++) {
-      eyeHLine(x0, y0 - y, x);
-      if (s >= 0) { s += fx2 * (1 - y); y--; }
-      s += ry2 * ((4 * x) + 6);
-    }
-    for (x = rx, y = 0, s = 2 * rx2 + ry2 * (1 - 2 * rx); rx2 * y <= ry2 * x; y++) {
-      eyeHLine(x0, y0 - y, x);
-      if (s >= 0) { s += fy2 * (1 - x); x--; }
-      s += rx2 * ((4 * y) + 6);
-    }
-  }
-  else if (corner == EYE_B_R) {
-    for (x = 0, y = ry, s = 2 * ry2 + rx2 * (1 - 2 * ry); ry2 * x <= rx2 * y; x++) {
-      eyeHLine(x0, y0 + y - 1, x);
-      if (s >= 0) { s += fx2 * (1 - y); y--; }
-      s += ry2 * ((4 * x) + 6);
-    }
-    for (x = rx, y = 0, s = 2 * rx2 + ry2 * (1 - 2 * rx); rx2 * y <= ry2 * x; y++) {
-      eyeHLine(x0, y0 + y - 1, x);
-      if (s >= 0) { s += fy2 * (1 - x); x--; }
-      s += rx2 * ((4 * y) + 6);
-    }
-  }
-  else if (corner == EYE_T_L) {
-    for (x = 0, y = ry, s = 2 * ry2 + rx2 * (1 - 2 * ry); ry2 * x <= rx2 * y; x++) {
-      eyeHLine(x0 - x, y0 - y, x);
-      if (s >= 0) { s += fx2 * (1 - y); y--; }
-      s += ry2 * ((4 * x) + 6);
-    }
-    for (x = rx, y = 0, s = 2 * rx2 + ry2 * (1 - 2 * rx); rx2 * y <= ry2 * x; y++) {
-      eyeHLine(x0 - x, y0 - y, x);
-      if (s >= 0) { s += fy2 * (1 - x); x--; }
-      s += rx2 * ((4 * y) + 6);
-    }
-  }
-  else if (corner == EYE_B_L) {
-    for (x = 0, y = ry, s = 2 * ry2 + rx2 * (1 - 2 * ry); ry2 * x <= rx2 * y; x++) {
-      eyeHLine(x0 - x, y0 + y - 1, x);
-      if (s >= 0) { s += fx2 * (1 - y); y--; }
-      s += ry2 * ((4 * x) + 6);
-    }
-    for (x = rx, y = 0, s = 2 * rx2 + ry2 * (1 - 2 * rx); rx2 * y <= ry2 * x; y++) {
-      eyeHLine(x0 - x, y0 + y, x);
-      if (s >= 0) { s += fy2 * (1 - x); x--; }
-      s += rx2 * ((4 * y) + 6);
-    }
+// One full sine cycle per 256 steps of p, result -1000..1000
+static int16_t rfSin(uint32_t p) {
+  p &= 255;
+  uint8_t i = p & 63;
+  switch (p >> 6) {
+    case 0:  return RF_SIN_Q[i];
+    case 1:  return RF_SIN_Q[64 - i];
+    case 2:  return -RF_SIN_Q[i];
+    default: return -RF_SIN_Q[64 - i];
   }
 }
 
-// EyeDrawer::Draw — config is taken by value (the original adjusts radii in place)
-static void eyeDraw(int16_t centerX, int16_t centerY, EyeConfig cfg) {
-  EyeConfig *config = &cfg;
-
-  int32_t delta_y_top = config->Height * config->Slope_Top / 2.0;
-  int32_t delta_y_bottom = config->Height * config->Slope_Bottom / 2.0;
-  int32_t totalHeight = config->Height + delta_y_top - delta_y_bottom;
-
-  if (config->Radius_Bottom > 0 && config->Radius_Top > 0 && totalHeight - 1 < config->Radius_Bottom + config->Radius_Top) {
-    int32_t corrected_radius_top = (float)config->Radius_Top * (totalHeight - 1) / (config->Radius_Bottom + config->Radius_Top);
-    int32_t corrected_radius_bottom = (float)config->Radius_Bottom * (totalHeight - 1) / (config->Radius_Bottom + config->Radius_Top);
-    config->Radius_Top = corrected_radius_top;
-    config->Radius_Bottom = corrected_radius_bottom;
-  }
-
-  int32_t TLc_y = centerY + config->OffsetY - config->Height/2 + config->Radius_Top - delta_y_top;
-  int32_t TLc_x = centerX + config->OffsetX - config->Width/2 + config->Radius_Top;
-  int32_t TRc_y = centerY + config->OffsetY - config->Height/2 + config->Radius_Top + delta_y_top;
-  int32_t TRc_x = centerX + config->OffsetX + config->Width/2 - config->Radius_Top;
-  int32_t BLc_y = centerY + config->OffsetY + config->Height/2 - config->Radius_Bottom - delta_y_bottom;
-  int32_t BLc_x = centerX + config->OffsetX - config->Width/2 + config->Radius_Bottom;
-  int32_t BRc_y = centerY + config->OffsetY + config->Height/2 - config->Radius_Bottom + delta_y_bottom;
-  int32_t BRc_x = centerX + config->OffsetX + config->Width/2 - config->Radius_Bottom;
-
-  int32_t min_c_x = min(TLc_x, BLc_x);
-  int32_t max_c_x = max(TRc_x, BRc_x);
-  int32_t min_c_y = min(TLc_y, TRc_y);
-  int32_t max_c_y = max(BLc_y, BRc_y);
-
-  eyeFillRectangle(min_c_x, min_c_y, max_c_x, max_c_y, 1);
-
-  eyeFillRectangle(TRc_x, TRc_y, BRc_x + config->Radius_Bottom, BRc_y, 1); // Right
-  eyeFillRectangle(TLc_x - config->Radius_Top, TLc_y, BLc_x, BLc_y, 1);    // Left
-  eyeFillRectangle(TLc_x, TLc_y - config->Radius_Top, TRc_x, TRc_y, 1);    // Top
-  eyeFillRectangle(BLc_x, BLc_y, BRc_x, BRc_y + config->Radius_Bottom, 1); // Bottom
-
-  if (config->Slope_Top > 0) {
-    eyeFillRectangularTriangle(TLc_x, TLc_y - config->Radius_Top, TRc_x, TRc_y - config->Radius_Top, 0);
-    eyeFillRectangularTriangle(TRc_x, TRc_y - config->Radius_Top, TLc_x, TLc_y - config->Radius_Top, 1);
-  }
-  else if (config->Slope_Top < 0) {
-    eyeFillRectangularTriangle(TRc_x, TRc_y - config->Radius_Top, TLc_x, TLc_y - config->Radius_Top, 0);
-    eyeFillRectangularTriangle(TLc_x, TLc_y - config->Radius_Top, TRc_x, TRc_y - config->Radius_Top, 1);
-  }
-
-  if (config->Slope_Bottom > 0) {
-    eyeFillRectangularTriangle(BRc_x + config->Radius_Bottom, BRc_y + config->Radius_Bottom, BLc_x - config->Radius_Bottom, BLc_y + config->Radius_Bottom, 0);
-    eyeFillRectangularTriangle(BLc_x - config->Radius_Bottom, BLc_y + config->Radius_Bottom, BRc_x + config->Radius_Bottom, BRc_y + config->Radius_Bottom, 1);
-  }
-  else if (config->Slope_Bottom < 0) {
-    eyeFillRectangularTriangle(BLc_x - config->Radius_Bottom, BLc_y + config->Radius_Bottom, BRc_x + config->Radius_Bottom, BRc_y + config->Radius_Bottom, 0);
-    eyeFillRectangularTriangle(BRc_x + config->Radius_Bottom, BRc_y + config->Radius_Bottom, BLc_x - config->Radius_Bottom, BLc_y + config->Radius_Bottom, 1);
-  }
-
-  if (config->Radius_Top > 0) {
-    eyeFillEllipseCorner(EYE_T_L, TLc_x, TLc_y, config->Radius_Top, config->Radius_Top);
-    eyeFillEllipseCorner(EYE_T_R, TRc_x, TRc_y, config->Radius_Top, config->Radius_Top);
-  }
-  if (config->Radius_Bottom > 0) {
-    eyeFillEllipseCorner(EYE_B_L, BLc_x, BLc_y, config->Radius_Bottom, config->Radius_Bottom);
-    eyeFillEllipseCorner(EYE_B_R, BRc_x, BRc_y, config->Radius_Bottom, config->Radius_Bottom);
-  }
+// Sine wave with the given period in ms, -1000..1000
+static int16_t rfWave(uint32_t t, uint32_t period) {
+  return rfSin((t % period) * 256 / period);
 }
 
-// ---- Preset -> final eye config (static, no random look/blink) ----
+static int16_t rfAbs(int16_t v) {
+  return v < 0 ? -v : v;
+}
 
-// Eye::ApplyPreset() mirroring + LookAssistant::LookAt(0, look) via
-// EyeTransformation::Apply() + EyeBlink::Apply(t = 1) when blinking.
-static EyeConfig eyeFinalConfig(const EyeConfig &p, bool mirrored, int8_t look, bool blink) {
-  EyeConfig c;
-  c.OffsetX = mirrored ? -p.OffsetX : p.OffsetX;
-  c.OffsetY = -p.OffsetY;
-  c.Height = p.Height;
-  c.Width = p.Width;
-  c.Slope_Top = mirrored ? p.Slope_Top : -p.Slope_Top;
-  c.Slope_Bottom = mirrored ? p.Slope_Bottom : -p.Slope_Bottom;
-  c.Radius_Top = p.Radius_Top;
-  c.Radius_Bottom = p.Radius_Bottom;
-  c.Inverse_Radius_Top = p.Inverse_Radius_Top;
-  c.Inverse_Radius_Bottom = p.Inverse_Radius_Bottom;
-  c.Inverse_Offset_Top = 0;
-  c.Inverse_Offset_Bottom = 0;
+// Division rounded to nearest (b > 0)
+static int32_t rfRdiv(int32_t a, int32_t b) {
+  return a >= 0 ? (a + b / 2) / b : (a - b / 2) / b;
+}
 
-  // LookAt(0, y): MoveY = 20*y, ScaleY = 1 - |y|*0.4
-  float moveY = 20 * look;
-  float scaleY = 1.0 - (look > 0 ? look : -look) * 0.4;
-  c.OffsetY = c.OffsetY - moveY;
-  c.Height = c.Height * scaleY;
+static uint32_t rfHash(uint32_t n) {
+  n ^= n >> 16;
+  n *= 0x7feb352dUL;
+  n ^= n >> 15;
+  n *= 0x846ca68bUL;
+  n ^= n >> 16;
+  return n;
+}
 
-  if (blink) {
-    // EyeBlink at t = 1 (BlinkHeight = 2). Width is kept at the eye's own
-    // width instead of BlinkWidth = 60 so the two closed eyes stay separate.
-    c.Height = 2;
-    c.Slope_Top = 0;
-    c.Slope_Bottom = 0;
-    c.Radius_Top = 0;
-    c.Radius_Bottom = 0;
-    c.Inverse_Radius_Top = 0;
-    c.Inverse_Radius_Bottom = 0;
+// Pseudo-random offset -range..range that changes every stepMs
+static int16_t rfJitter(uint32_t t, uint16_t stepMs, uint8_t range, uint8_t seed) {
+  return (int16_t)(rfHash(t / stepMs * 7 + seed) % (2 * range + 1)) - range;
+}
+
+static uint16_t rfIsqrt(uint32_t v) {
+  uint32_t res = 0, bit = 1UL << 30;
+  while (bit > v) bit >>= 2;
+  while (bit) {
+    if (v >= res + bit) {
+      v -= res + bit;
+      res = (res >> 1) + bit;
+    } else {
+      res >>= 1;
+    }
+    bit >>= 2;
+  }
+  return res;
+}
+
+// One blink: 0 -> 1000 (closed) -> 0 over dur ms, starting at `start`
+static int16_t rfBlinkShape(uint32_t local, uint32_t start, uint16_t dur) {
+  if (local < start || local >= start + dur) return 0;
+  uint32_t e = local - start, half = dur / 2;
+  if (e < half) return e * 1000 / half;
+  return (dur - e) * 1000 / (dur - half);
+}
+
+// Natural blinking: one blink per period at a random moment, sometimes a double blink.
+// Returns closure 0..1000. Needs period > 4 * (2 * dur + 90) for the double blink to fit.
+static int16_t rfBlink(uint32_t t, uint16_t period, uint16_t dur, uint8_t seed) {
+  uint32_t n = t / period;
+  uint32_t h = rfHash(n * 31 + seed);
+  uint32_t start = h % (period / 2) + period / 4;
+  uint32_t local = t % period;
+  int16_t c = rfBlinkShape(local, start, dur);
+  if ((h >> 8) % 4 == 0) {
+    int16_t c2 = rfBlinkShape(local, start + dur + 90, dur);
+    if (c2 > c) c = c2;
   }
   return c;
 }
 
-// Face(128, 64, eyeSize = 40), EyeInterDistance = 4; left eye is mirrored
-static const int16_t EYE_SIZE = 40;
-static const int16_t EYE_INTER_DISTANCE = 4;
-
-static void drawEyeVariant(uint8_t id) {
-  if (id >= EYE_VARIANT_COUNT) return;
-  const EyeVariant &v = eyeVariants[id];
-
-  const int16_t cx = SCREEN_WIDTH / 2;
-  const int16_t cy = SCREEN_HEIGHT / 2;
-
-  display.clearDisplay();
-  eyeDraw(cx - EYE_SIZE / 2 - EYE_INTER_DISTANCE, cy, eyeFinalConfig(*v.left, true, v.look, v.blink));
-  eyeDraw(cx + EYE_SIZE / 2 + EYE_INTER_DISTANCE, cy, eyeFinalConfig(*v.right, false, v.look, v.blink));
-  display.display();
+// Steps through pts[], holding each for `hold` ms and easing to it over `move` ms
+static int16_t rfPath(uint32_t t, const int8_t *pts, uint8_t n, uint16_t hold, uint16_t move) {
+  uint32_t seg = t / hold, in = t % hold;
+  int16_t to = pts[seg % n], from = pts[(seg + n - 1) % n];
+  if (seg == 0 || in >= move) return to;
+  int32_t e = (1000 - rfSin(in * 128 / move + 64)) / 2;   // ease in-out 0..1000
+  return from + (int32_t)(to - from) * e / 1000;
 }
 
-// =====================================================
-// EYE ANIMATION (EYE_MODE) - millis()-based, no delay()
-//
-// Built from the library's own animation pieces, per eye:
-//   preset (mirrored) -> LookAt(x, y)     (LookAssistant / EyeTransformation)
-//                     -> Variation1, 2    (EyeVariation + TrapeziumPulseAnimation)
-//                     -> blink            (EyeBlink + TrapeziumAnimation, t*t)
-// eyeAnims[] is parallel to eyeVariants[]; the variants are unchanged.
-// =====================================================
+// ---- Look paths (whole eye shapes slide by these x offsets) ----
+static const int8_t RF_LOOK_WORRIED[] = { 0, -4, 0, 4, -2 };
+static const int8_t RF_LOOK_BORED[]   = { 0, 5, 5, -4 };
+static const int8_t RF_LOOK_SCARED[]  = { 0, -6, 4, -5, 6, -2 };
 
-// TrapeziumPulseAnimation phases (ms): wait t0, rise over t1, hold t2,
-// fall over t3, rest t4. Its 0..1 value is applied as (2t - 1).
-struct EyeWave { uint16_t t0, t1, t2, t3, t4; };
-
-// EyeVariation::Values (pixels) driven by a wave
-struct EyeMotion { int8_t OffsetX, OffsetY, Height, Width; EyeWave wave; };
-
-// LookAt(x / 10.0, y / 10.0)
-struct EyeLookPoint { int8_t x, y; };
-
-struct EyeAnim {
-  EyeMotion right1, right2, left1, left2;          // like Eye::Variation1/2
-  uint16_t blinkEveryMs;                           // 0 = no blink
-  uint16_t blinkCloseMs, blinkHoldMs, blinkOpenMs; // TrapeziumAnimation(t0, t1, t2)
-  const EyeLookPoint *look;                        // nullptr = fixed look (EyeVariant.look)
-  uint8_t lookCount;
-  uint16_t lookDwellMs;                            // time per look point
-  uint16_t lookMoveMs;                             // ramp to the next point (library: 200)
+// ---- Chunky icons (1 bit per pixel, MSB first, 2 px strokes) ----
+static const uint8_t RF_BMP_QUESTION[] PROGMEM = {   // 8x10 '?'
+  0x3C, 0x7E, 0x66, 0x06, 0x0C, 0x18, 0x18, 0x00, 0x18, 0x18
+};
+static const uint8_t RF_BMP_Z[] PROGMEM = {          // 7x7 'z'
+  0xFE, 0xFE, 0x0C, 0x18, 0x30, 0xFE, 0xFE
+};
+static const uint8_t RF_BMP_SPARK[] PROGMEM = {      // 7x7 sparkle
+  0x10, 0x10, 0x38, 0xFE, 0x38, 0x10, 0x10
+};
+static const uint8_t RF_BMP_ANGER[] PROGMEM = {      // 9x8 anger mark
+  0x63, 0x00, 0xE3, 0x80, 0xC1, 0x80, 0x00, 0x00,
+  0x00, 0x00, 0xC1, 0x80, 0xE3, 0x80, 0x63, 0x00
 };
 
-#define EW_NONE    { 0, 0, 0, 0, 0 }
-#define EW_TRI(T)  { 0, (T) / 2, 0, (T) / 2, 0 }      // SetTriangle(T, 0)
-#define EW_V2      { 0, 200, 200, 200, 200 }          // Eye.cpp Variation2 default
-#define EM_NONE    { 0, 0, 0, 0, EW_NONE }
-#define EYE_LOOK(a)  a, (uint8_t)(sizeof(a) / sizeof(a[0]))
-#define EYE_NO_LOOK  nullptr, 0
+// ---- Curved OLED geometry ----
 
-static const EyeLookPoint LOOK_SIDE[]      = { {0, 0}, {-6, 0}, {0, 0}, {6, 0} };
-static const EyeLookPoint LOOK_AROUND[]    = { {0, 0}, {-5, 3}, {5, 3}, {5, -3}, {-5, -3} };
-static const EyeLookPoint LOOK_SHIFTY[]    = { {-7, 0}, {7, 0} };
-static const EyeLookPoint LOOK_AWAY[]      = { {0, 0}, {6, 1} };
-static const EyeLookPoint LOOK_AWE[]       = { {0, 3} };
-
-static const EyeAnim eyeAnims[] = {
-  // 1. Neutral: library Normal variations (breathing) + natural blink (BlinkAssistant 3500 ms, EyeBlink 40/100/40)
-  { {0, 0, 3, 0, EW_TRI(1000)}, {0, 0, 0, 1, EW_V2}, {0, 0, 2, 0, EW_TRI(1000)}, {0, 0, 0, 2, EW_V2},
-    3500, 40, 100, 40, EYE_NO_LOOK, 0, 0 },
-  // 2. Blink (high): looking up, open -> half -> closed -> half -> open, repeating
-  { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 1300, 200, 100, 200, EYE_NO_LOOK, 0, 0 },
-  // 3. Glee: library Glee variation (OffsetY 5, SetTriangle(300))
-  { {0, 5, 0, 0, EW_TRI(300)}, EM_NONE, {0, 5, 0, 0, EW_TRI(300)}, EM_NONE,
-    0, 0, 0, 0, EYE_NO_LOOK, 0, 0 },
-  // 4. Sad (looking up to user): pleading quiver + blink
-  { {0, 0, 2, 0, EW_TRI(400)}, EM_NONE, {0, 0, 2, 0, EW_TRI(400)}, EM_NONE,
-    4500, 60, 120, 80, EYE_NO_LOOK, 0, 0 },
-  // 5. Worried: nervous side glances + quiver + blink
-  { {0, 0, 2, 0, EW_TRI(500)}, EM_NONE, {0, 0, 2, 0, EW_TRI(500)}, EM_NONE,
-    3000, 40, 100, 40, EYE_LOOK(LOOK_SIDE), 900, 200 },
-  // 6. Focused/Determined: slow narrowing pulse + rare blink
-  { {0, 0, 2, 0, EW_TRI(1500)}, EM_NONE, {0, 0, 2, 0, EW_TRI(1500)}, EM_NONE,
-    6000, 40, 100, 40, EYE_NO_LOOK, 0, 0 },
-  // 7. Annoyed: glance away and back + slow blink
-  { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 3500, 80, 150, 80, EYE_LOOK(LOOK_AWAY), 1500, 250 },
-  // 8. Frustrated/Bored: wandering look around + slow blink
-  { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 3000, 100, 150, 150, EYE_LOOK(LOOK_AROUND), 1400, 500 },
-  // 9. Sleepy Eyes: drooping lids + slow heavy blink
-  { {0, 1, 2, 0, EW_TRI(3000)}, EM_NONE, {0, 1, 2, 0, EW_TRI(3000)}, EM_NONE,
-    2500, 300, 400, 300, EYE_NO_LOOK, 0, 0 },
-  // 10. Suspicious: shifty left/right look + blink
-  { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 5000, 40, 100, 40, EYE_LOOK(LOOK_SHIFTY), 1200, 300 },
-  // 11. Angry: library Angry variation (OffsetY 2, SetTriangle(300)) + blink
-  { {0, 2, 0, 0, EW_TRI(300)}, EM_NONE, {0, 2, 0, 0, EW_TRI(300)}, EM_NONE,
-    4000, 40, 100, 40, EYE_NO_LOOK, 0, 0 },
-  // 12. Scared: tremble + darting side looks + quick blink
-  { {1, 0, 0, 0, EW_TRI(100)}, EM_NONE, {1, 0, 0, 0, EW_TRI(100)}, EM_NONE,
-    3000, 30, 60, 30, EYE_LOOK(LOOK_SIDE), 700, 120 },
-  // 13. Awe: slow wonder pulse, looking slightly up + blink
-  { {0, 0, 3, 2, EW_TRI(1500)}, EM_NONE, {0, 0, 3, 2, EW_TRI(1500)}, EM_NONE,
-    4500, 40, 100, 40, EYE_LOOK(LOOK_AWE), 1000, 0 },
-};
-static_assert(sizeof(eyeAnims) / sizeof(eyeAnims[0]) == EYE_VARIANT_COUNT, "eyeAnims[] needs one entry per eye variant");
-
-// TrapeziumPulseAnimation::Calculate()
-static float eyeWaveValue(const EyeWave &w, unsigned long elapsed) {
-  unsigned long interval = (unsigned long)w.t0 + w.t1 + w.t2 + w.t3 + w.t4;
-  if (interval == 0) return 0.5f;  // no wave: variation contributes 0
-  unsigned long e = elapsed % interval;
-  if (e < w.t0) return 0.0f;
-  if (e < (unsigned long)w.t0 + w.t1) return (float)(e - w.t0) / w.t1;
-  if (e < (unsigned long)w.t0 + w.t1 + w.t2) return 1.0f;
-  if (e < (unsigned long)w.t0 + w.t1 + w.t2 + w.t3) return 1.0f - (float)(e - w.t0 - w.t1 - w.t2) / w.t3;
-  return 0.0f;
+// Whole face is scaled by RF_SCALE percent about (64, RF_SCY): coordinates and sizes in
+// the emotion code are written for the base size and scaled here, in the primitives.
+static const int16_t RF_SCALE = 140;       // whole face 40% bigger than the base design
+static const int16_t RF_EYE_NARROW = 72;   // eye shapes 28% narrower (width only), so eyes stay narrow
+static const int16_t RF_SCY = 30;
+static int16_t rfS(int16_t v) { return rfRdiv((int32_t)v * RF_SCALE, 100); }
+static int16_t rfSX(int16_t x) { return 64 + rfS(x - 64); }
+static int16_t rfSY(int16_t y) { return RF_SCY + rfS(y - RF_SCY); }
+// Icon at a scaled position, kept at least 2 px inside the screen
+static void rfBitmap(int16_t x, int16_t y, const uint8_t *bmp, int16_t w, int16_t h) {
+  x = rfSX(x);
+  y = rfSY(y);
+  if (x < 2) x = 2;
+  if (x > SCREEN_WIDTH - 2 - w) x = SCREEN_WIDTH - 2 - w;
+  if (y < 2) y = 2;
+  if (y > SCREEN_HEIGHT - 2 - h) y = SCREEN_HEIGHT - 2 - h;
+  display.drawBitmap(x, y, bmp, w, h, SSD1306_WHITE);
 }
 
-// EyeVariation::Apply(2t - 1)
-static void eyeApplyMotion(EyeConfig &c, const EyeMotion &m, unsigned long elapsed) {
-  float t = 2.0f * eyeWaveValue(m.wave, elapsed) - 1.0f;
-  c.OffsetX = c.OffsetX + m.OffsetX * t;
-  c.OffsetY = c.OffsetY + m.OffsetY * t;
-  c.Height = c.Height + m.Height * t;
-  c.Width = c.Width + m.Width * t;
+static int16_t rfEyeX(int8_t side) {   // side: -1 = left eye, +1 = right eye
+  return side < 0 ? RF_LX : RF_RX;
 }
 
-// Blink at the end of every blinkEveryMs period: TrapeziumAnimation, then t*t (EyeBlink::Update)
-static float eyeBlinkAmount(const EyeAnim &a, unsigned long elapsed) {
-  if (a.blinkEveryMs == 0) return 0.0f;
-  unsigned long dur = (unsigned long)a.blinkCloseMs + a.blinkHoldMs + a.blinkOpenMs;
-  unsigned long phase = elapsed % a.blinkEveryMs;
-  if (phase + dur < a.blinkEveryMs) return 0.0f;
-  unsigned long e = phase - (a.blinkEveryMs - dur);
-  float t;
-  if (e < a.blinkCloseMs) t = (float)e / a.blinkCloseMs;
-  else if (e < (unsigned long)a.blinkCloseMs + a.blinkHoldMs) t = 1.0f;
-  else t = 1.0f - (float)(e - a.blinkCloseMs - a.blinkHoldMs) / a.blinkOpenMs;
-  if (t < 0.0f) t = 0.0f;
-  return t * t;
-}
-
-// Look point at this moment: hold each point lookDwellMs, ramping to it over lookMoveMs
-static void eyeLookNow(const EyeAnim &a, int8_t fixedY, unsigned long elapsed, float &x, float &y) {
-  if (a.look == nullptr || a.lookCount == 0 || a.lookDwellMs == 0) {
-    x = 0.0f;
-    y = fixedY;
-    return;
+// The one eye shape. Superellipse of half-size rx x ry centred on (cx, cy), drawn
+// column by column. side (-1/+1) mirrors it so "outer" means away from the face centre.
+// shear: outer end lower by shear/16 px per px (negative = outer end higher).
+// Upper lid: cuts topIn/topOut px down at the inner/outer edge, plus topCurve px extra in
+// the middle (positive = cut bulges down, e.g. a ∪ smile). Lower lid: same from below
+// (positive botCurve bulges up, e.g. a ∩ eyelid).
+static void rfEye(int16_t cx, int16_t cy, int16_t rx, int16_t ry, int8_t side, int16_t shear,
+                  int16_t topIn, int16_t topOut, int16_t topCurve,
+                  int16_t botIn, int16_t botOut, int16_t botCurve) {
+  if (rx < 1 || ry < 1) return;
+  cx = rfSX(cx); cy = rfSY(cy); ry = rfS(ry);
+  rx = rfRdiv((int32_t)rfS(rx) * RF_EYE_NARROW, 100);
+  if (rx < 1) rx = 1;
+  topIn = rfS(topIn); topOut = rfS(topOut); topCurve = rfS(topCurve);
+  botIn = rfS(botIn); botOut = rfS(botOut); botCurve = rfS(botCurve);
+  for (int16_t x = -rx; x <= rx; x++) {
+    int16_t ax = x < 0 ? -x : x;
+    int16_t hy = rfRdiv((int32_t)ry * RF_PROF[(int32_t)ax * 64 / (2 * rx + 1)], 1000);
+    int16_t xo = x * side;                                     // + = outer side
+    int16_t yc = cy + rfRdiv((int32_t)xo * shear, 16);
+    int32_t num = xo + rx;                                     // 0 (inner) .. 2rx (outer)
+    int32_t uu = 1000 - (int32_t)x * x * 1000 / ((int32_t)rx * rx);   // 1 - u^2, per mille
+    int16_t top = yc - ry + rfRdiv(topIn * (2 * rx - num) + topOut * num, 2 * rx) + rfRdiv(topCurve * uu, 1000);
+    int16_t bot = yc + ry - rfRdiv(botIn * (2 * rx - num) + botOut * num, 2 * rx) - rfRdiv(botCurve * uu, 1000);
+    if (top < yc - hy) top = yc - hy;
+    if (bot > yc + hy) bot = yc + hy;
+    if (bot >= top) display.drawFastVLine(cx + x, top, bot - top + 1, SSD1306_WHITE);
   }
-  unsigned long seg = elapsed / a.lookDwellMs;
-  unsigned long inSeg = elapsed % a.lookDwellMs;
-  const EyeLookPoint &to = a.look[seg % a.lookCount];
-  const EyeLookPoint &from = a.look[(seg + a.lookCount - 1) % a.lookCount];
-  float r = (seg == 0 || inSeg >= a.lookMoveMs) ? 1.0f : (float)inSeg / a.lookMoveMs;
-  x = (from.x + (to.x - from.x) * r) / 10.0f;
-  y = (from.y + (to.y - from.y) * r) / 10.0f;
 }
 
-static EyeConfig eyeAnimatedConfig(const EyeConfig &preset, bool mirrored, const EyeMotion &m1, const EyeMotion &m2,
-                                   float lookX, float lookY, float blinkT, unsigned long elapsed) {
-  EyeConfig c = eyeFinalConfig(preset, mirrored, 0, false);  // Eye::ApplyPreset() mirroring
+// Plain (uncut) eye shape
+static void rfPlain(int16_t cx, int16_t cy, int16_t rx, int16_t ry, int8_t side, int16_t shear) {
+  rfEye(cx, cy, rx, ry, side, shear, 0, 0, 0, 0, 0, 0);
+}
 
-  // LookAssistant::LookAt(x, y) -> EyeTransformation::Apply()
-  int16_t moveX = -25 * lookX;
-  int16_t moveY = 20 * lookY;
-  float scaleY = (mirrored ? 1.0f + lookX * 0.2f : 1.0f - lookX * 0.2f) * (1.0f - fabsf(lookY) * 0.4f);
-  c.OffsetX = c.OffsetX + moveX;
-  c.OffsetY = c.OffsetY - moveY;
-  c.Height = c.Height * scaleY;
+// Blink: both lids close toward the middle (c = 0..1000), leaving a thin curved line
+static void rfLids(int16_t cx, int16_t cy, int16_t rx, int16_t ry, int8_t side, int16_t shear, int16_t c) {
+  int16_t k = (int32_t)(ry - 1) * c / 1000;
+  rfEye(cx, cy, rx, ry, side, shear, k, k, 0, k, k, 0);
+}
 
-  eyeApplyMotion(c, m1, elapsed);
-  eyeApplyMotion(c, m2, elapsed);
+// Thick stroke with round ends (thickness 2r+1), screen coordinates
+static void rfStrokeRaw(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t r) {
+  display.fillCircle(x0, y0, r, SSD1306_WHITE);
+  display.fillCircle(x1, y1, r, SSD1306_WHITE);
+  int32_t dx = x1 - x0, dy = y1 - y0;
+  int16_t len = rfIsqrt(dx * dx + dy * dy);
+  if (len == 0) return;
+  int16_t px = rfRdiv(-dy * r, len), py = rfRdiv(dx * r, len);
+  display.fillTriangle(x0 + px, y0 + py, x1 + px, y1 + py, x1 - px, y1 - py, SSD1306_WHITE);
+  display.fillTriangle(x0 + px, y0 + py, x1 - px, y1 - py, x0 - px, y0 - py, SSD1306_WHITE);
+}
 
-  // EyeBlink::Apply(t); width kept so the closed eyes stay separate (as in the static blink)
-  if (blinkT > 0.0f) {
-    c.Height = (2 - c.Height) * blinkT + c.Height;
-    c.Slope_Top = c.Slope_Top * (1.0f - blinkT);
-    c.Slope_Bottom = c.Slope_Bottom * (1.0f - blinkT);
-    c.Radius_Top = c.Radius_Top * (1.0f - blinkT);
-    c.Radius_Bottom = c.Radius_Bottom * (1.0f - blinkT);
-    c.Inverse_Radius_Top = c.Inverse_Radius_Top * (1.0f - blinkT);
-    c.Inverse_Radius_Bottom = c.Inverse_Radius_Bottom * (1.0f - blinkT);
+// Thick stroke in face coordinates (scaled)
+static void rfStroke(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t r) {
+  rfStrokeRaw(rfSX(x0), rfSY(y0), rfSX(x1), rfSY(y1), rfS(r));
+}
+
+// Smooth thick arc along an ellipse from angle a0 to a1 (256 = full turn, 0 = right,
+// 64 = top), built from 6 strokes of radius r. 10..118 = ∩, 138..246 = ∪.
+static void rfArc(int16_t cx, int16_t cy, int16_t rx, int16_t ry, int16_t a0, int16_t a1, int16_t r) {
+  int16_t px = 0, py = 0;
+  for (uint8_t i = 0; i <= 6; i++) {
+    int16_t a = a0 + (int32_t)(a1 - a0) * i / 6;
+    int16_t x = cx + rfRdiv((int32_t)rx * rfSin(a + 64), 1000);
+    int16_t y = cy - rfRdiv((int32_t)ry * rfSin(a), 1000);
+    if (i > 0) rfStroke(px, py, x, y, r);
+    px = x;
+    py = y;
   }
-  return c;
 }
+
+// Small wobbly zig-zag of strokes: 4 segments, flip swaps the phase
+static void rfZig(int16_t cx, int16_t cy, int16_t half, int16_t amp, uint8_t flip, int16_t r) {
+  int16_t step = half / 2;
+  int16_t x = cx - half;
+  int16_t s = flip ? amp : -amp;
+  for (uint8_t i = 0; i < 4; i++) {
+    rfStroke(x, cy + s, x + step, cy - s, r);
+    x += step;
+    s = -s;
+  }
+}
+
+// ---- Emotions ----
+
+static void rfDrawEmotion(uint8_t id, uint32_t t) {
+  switch (id) {
+
+    case EYE_HAPPY: {
+      int16_t b = rfAbs(rfWave(t, 900));              // bounce every 450 ms
+      int16_t dy = -(b * 2 / 1000);
+      int16_t sq = (1000 - b) / 500;                  // squash when landing
+      for (int8_t s = -1; s <= 1; s += 2) {
+        int16_t ex = rfEyeX(s);
+        rfEye(ex, RF_EY + 1 + dy, 8, 8, s, 0, 0, 0, 0, 0, 0, 11 - sq);  // ∩ eyelid
+        rfEye(ex, RF_LY + dy, 5, 2, s, -3, 0, 0, 0, 0, 0, 0);            // lower piece
+      }
+      rfEye(RF_MX, RF_MY - 1 + dy, 7 + (rfWave(t, 450) + 1000) / 1000, 4, 1, 3, 0, 0, 0, 0, 0, 0);   // bean mouth
+      break;
+    }
+
+    case EYE_SAD: {
+      int16_t dy = 1 + rfWave(t, 4200) * 2 / 1000;    // slow sink
+      int16_t c = rfBlink(t, 3600, 300, 3);
+      int16_t k = 5 * c / 1000;
+      for (int8_t s = -1; s <= 1; s += 2) {
+        int16_t ex = rfEyeX(s);
+        rfEye(ex, RF_EY + 1 + dy, 7, 6, s, 6, k, 4 + k, 1, k, k, 0);     // drooping outward
+        rfPlain(ex, RF_LY + 2 + dy, 5, 2, s, 4);                         // tilted lower piece
+      }
+      int32_t ph = t % 3400;
+      if (ph < 1100) {                                // small tear
+        int16_t ty = RF_LY + 5 + dy + ph * 7 / 1100;    // short fall: stays on screen
+        display.fillCircle(rfSX(RF_RX + 9), rfSY(ty), 1, SSD1306_WHITE);
+        display.fillTriangle(rfSX(RF_RX + 8), rfSY(ty - 1), rfSX(RF_RX + 10), rfSY(ty - 1), rfSX(RF_RX + 9), rfSY(ty - 4), SSD1306_WHITE);
+      }
+      rfArc(RF_MX, RF_MY + 3, 5, 3, 10, 118, 1);                        // frown
+      break;
+    }
+
+    case EYE_ANGRY: {
+      int16_t in = (rfWave(t, 1400) + 1000) * 2 / 2000;   // creep inward 0..2 px
+      int16_t j = rfJitter(t, 70, 1, 5);
+      int16_t k = 5 * rfBlink(t, 4200, 120, 5) / 1000;
+      for (int8_t s = -1; s <= 1; s += 2)
+        rfEye(rfEyeX(s) - s * in, RF_EY + 2 + j, 8, 7, s, -6, 6 + k, k, 0, k, k, 0);
+      rfArc(RF_MX, RF_MY + 3, 5, 2, 10, 118, 1);
+      break;
+    }
+
+    case EYE_SLEEPY: {
+      int32_t ph = t % 5200;
+      int32_t k;                                      // closure 0..1000
+      if (ph < 2600) k = 400 + 300 * ph / 2600;              // drooping
+      else if (ph < 3200) k = 700 + 300 * (ph - 2600) / 600;  // closing
+      else if (ph < 4300) k = 1000;                           // asleep
+      else k = 1000 - 600 * (ph - 4300) / 900;                // reopening
+      int16_t lid = 3 + 6 * k / 1000;
+      for (int8_t s = -1; s <= 1; s += 2)
+        rfEye(rfEyeX(s), RF_EY + 2 + 2 * k / 1000, 8, 5, s, 0, lid, lid, -2, 0, 0, 0);   // thin curved lid
+      if (ph >= 3000) {
+        int32_t z = ph - 3000;
+        rfBitmap(100 + z / 500, 14 - z * 10 / 2200, RF_BMP_Z, 7, 7);
+      }
+      if (ph >= 3200 && ph < 4300) {                  // snore
+        int16_t q = 1 + (t / 400) % 2;
+        rfPlain(RF_MX, RF_MY, q + 1, q, 1, 0);
+      }
+      break;
+    }
+
+    case EYE_SURPRISED: {
+      int32_t ph = t % 2400;
+      int16_t p;
+      if (ph < 110) p = 6 * ph / 110;                 // stretch open
+      else if (ph < 260) p = 6 - (ph - 110) / 150;    // settle
+      else p = 5;
+      int16_t c = rfBlink(t, 5000, 140, 4);
+      for (int8_t s = -1; s <= 1; s += 2) rfLids(rfEyeX(s), RF_EY + 1, 6 + p / 3, 6 + p, s, 0, c);
+      rfPlain(RF_MX, RF_MY + 3, 2 + p / 4, 3 + p / 3, 1, 0);              // small open mouth
+      break;
+    }
+
+    case EYE_WORRIED: {
+      int16_t lx = rfPath(t, RF_LOOK_WORRIED, 5, 700, 120);
+      int16_t k = 7 * rfBlink(t, 2700, 150, 7) / 1000;
+      for (int8_t s = -1; s <= 1; s += 2) {
+        int16_t q = s < 0 ? rfWave(t, 330) / 700 : rfWave(t, 410) / 700;   // independent quiver
+        rfEye(rfEyeX(s) + lx, RF_EY + q, 6, s < 0 ? 8 : 7, s, s < 0 ? 3 : 2, k, 3 + k, 0, k, k, 0);
+      }
+      rfZig(RF_MX, RF_MY + 1, 6, 1, (t / 300) & 1, 1);
+      break;
+    }
+
+    case EYE_CONFUSED: {
+      int16_t s = rfWave(t, 3600);
+      int16_t k = 7 * rfBlink(t, 3900, 160, 9) / 1000;
+      rfEye(RF_LX, RF_EY - s * 2 / 1000, 7, 8 + s * 2 / 1000, -1, 0, k, k, 0, k, k, 0);   // taller eye
+      rfPlain(RF_RX, RF_EY + 3, 6, 4 - s / 1000, 1, s * 5 / 1000);                       // small tilted eye
+      rfBitmap(108, 4 + rfAbs(rfWave(t, 1000)) * 3 / 1000, RF_BMP_QUESTION, 8, 10);
+      rfPlain(RF_MX, RF_MY + 1, 5, 2, 1, s * 5 / 1000);                                   // tilted mouth
+      break;
+    }
+
+    case EYE_EXCITED: {
+      int16_t b = rfAbs(rfWave(t, 840));              // bounce every 420 ms
+      int16_t dy = -(b * 2 / 1000);
+      int16_t wv = (rfWave(t, 700) + 1000) * 2 / 2000;
+      for (int8_t s = -1; s <= 1; s += 2) rfPlain(rfEyeX(s), RF_EY + dy, 9 + wv, 7 + wv / 2, s, 0);
+      int16_t gy = 4 + (rfWave(t, 500) + 1000) / 1000;
+      rfEye(RF_MX, RF_MY - 2 + dy, 7, gy, 1, 0, gy, gy, 0, 0, 0, 0);   // D grin opening/closing
+      if ((t / 180) % 2 == 0) {
+        rfBitmap(18, 8, RF_BMP_SPARK, 7, 7);
+        rfBitmap(104, 40, RF_BMP_SPARK, 7, 7);
+      } else {
+        rfBitmap(17, 40, RF_BMP_SPARK, 7, 7);
+        rfBitmap(103, 8, RF_BMP_SPARK, 7, 7);
+      }
+      break;
+    }
+
+    case EYE_BORED: {
+      int16_t lx = rfPath(t, RF_LOOK_BORED, 4, 2600, 1400);
+      int16_t k = 3 * rfBlink(t, 4800, 500, 11) / 1000;
+      for (int8_t s = -1; s <= 1; s += 2)
+        rfEye(rfEyeX(s) + lx, RF_EY + 3, 9, 4, s, 0, 3 + k, 3 + k, -1, k, k, 0);   // flat, half-lidded
+      rfPlain(RF_MX + lx / 2, RF_MY, 5, 1, 1, 0);
+      break;
+    }
+
+    case EYE_SCARED: {
+      int16_t lx = rfPath(t, RF_LOOK_SCARED, 6, 650, 60);
+      int16_t jx = rfJitter(t, 50, 1, 13), jy = rfJitter(t, 50, 1, 17);
+      int16_t p = (rfWave(t, 400) + 1000) / 1000;     // quick pulse
+      int16_t c = rfBlink(t, 2200, 90, 13);
+      for (int8_t s = -1; s <= 1; s += 2) rfLids(rfEyeX(s) + s * 4 + lx + jx, RF_EY + 1 + jy, 4 + p, 6 + p, s, 0, c);
+      rfZig(RF_MX + jx, RF_MY, 4, 1, (t / 90) & 1, 1);
+      break;
+    }
+
+    case EYE_FURIOUS: {
+      int16_t sx = rfJitter(t, 40, 2, 19), sy = rfJitter(t, 40, 1, 23);
+      int16_t fl = rfWave(t, 600) > 0 ? 1 : 0;        // flare
+      for (int8_t s = -1; s <= 1; s += 2)
+        rfEye(rfEyeX(s) + sx, RF_EY + 2 + sy, 9, 8 + fl, s, -9, 9, 0, 0, 0, 3, 0);
+      if ((t / 250) % 2 == 0) rfBitmap(108, 4, RF_BMP_ANGER, 9, 8);
+      rfZig(RF_MX + sx, RF_MY + 1 + sy, 6, 2, (t / 120) & 1, 1);
+      break;
+    }
+  }
+}
+
+// ---- Frame drawing / timing ----
 
 static void drawEyeFrame(uint8_t id, unsigned long elapsed) {
   if (id >= EYE_VARIANT_COUNT) return;
-  const EyeVariant &v = eyeVariants[id];
-  const EyeAnim &a = eyeAnims[id];
-
-  float lookX, lookY;
-  eyeLookNow(a, v.look, elapsed, lookX, lookY);
-  float blinkT = eyeBlinkAmount(a, elapsed);
-
-  const int16_t cx = SCREEN_WIDTH / 2;
-  const int16_t cy = SCREEN_HEIGHT / 2;
-
   display.clearDisplay();
-  eyeDraw(cx - EYE_SIZE / 2 - EYE_INTER_DISTANCE, cy,
-          eyeAnimatedConfig(*v.left, true, a.left1, a.left2, lookX, lookY, blinkT, elapsed));
-  eyeDraw(cx + EYE_SIZE / 2 + EYE_INTER_DISTANCE, cy,
-          eyeAnimatedConfig(*v.right, false, a.right1, a.right2, lookX, lookY, blinkT, elapsed));
+  rfDrawEmotion(id, elapsed);
   display.display();
+}
+
+// Static picture of an emotion (a representative moment of its animation)
+static void drawEyeVariant(uint8_t id) {
+  drawEyeFrame(id, 500);
 }
 
 static const unsigned long EYE_FRAME_MS = 33;   // ~30 fps
 static unsigned long eyeAnimStartMs = 0;
 static unsigned long eyeLastFrameMs = 0;
 
-// Restart the selected variant's animation from its first frame
+// Restart the selected emotion's animation from its first frame
 static void eyeAnimRestart() {
   eyeAnimStartMs = millis();
   eyeLastFrameMs = eyeAnimStartMs;
