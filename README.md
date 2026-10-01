@@ -1,230 +1,265 @@
-# OLED Eye Animation Project
+<div align="center">
 
-## Overview
+<img src="https://raw.githubusercontent.com/yo5on/yo5on/main/hd-projects.svg" width="620" alt="projects"/>
 
-An ESP32 project that drives a 0.96" 128x64 SSD1306 OLED and is controlled with two push buttons. It has:
+<samp><b>OLED EYE ANIMATION</b></samp>
 
-- **4 animated videos** stored as 1024-byte bitmap frames
-- **6 still images**
-- **13 animated eye expressions**, drawn live from shape settings rather than stored as bitmaps
-- an autonomous, mood-based **Eye Mode** that picks expressions by itself
-- **two buttons**: PREV and NEXT for browsing, and both together to switch modes
+<samp>esp32 · ssd1306 · arduino · embedded systems</samp>
 
-The eye drawing and animation code is ported from the [esp32-eyes](https://github.com/playfultechnology/esp32-eyes) library (AGPL-3.0), which is included in `esp32-eyes-main/` for reference.
+</div>
 
-## Hardware
+---
 
-- ESP32 DevKit (30-pin)
-- 0.96" 128x64 SSD1306 OLED, I2C
-- 2 momentary push buttons
+<div align="center"><samp>An ESP32-based OLED eye animation system with videos, still images, expressive animated eyes, mood-driven Eye Mode, and two-button control.</samp></div>
 
-| Part | Pin | ESP32 |
+---
+
+<div align="center"><samp><b>Features</b></samp></div>
+
+- <samp><b>Video and image playback</b> — 4 animated videos stored as bitmap frames and 6 still images.</samp>
+- <samp><b>Animated eye expressions</b> — 13 expressions drawn live from shape and animation settings rather than stored bitmaps.</samp>
+- <samp><b>Eye Mode</b> — autonomous, mood-based expression selection with weighted randomness and timed transitions.</samp>
+- <samp><b>Two-button control</b> — PREV and NEXT navigate content in Normal Mode, while both buttons switch between modes.</samp>
+- <samp><b>Responsive animation</b> — non-blocking <code>millis()</code>-based timing keeps buttons responsive while content animates.</samp>
+
+---
+
+<div align="center"><samp><b>Hardware</b></samp></div>
+
+| <samp>Part</samp> | <samp>Connection</samp> | <samp>ESP32</samp> |
 |---|---|---|
-| OLED | VCC | 3V3 |
-| OLED | GND | GND |
-| OLED | SDA | **GPIO 22** |
-| OLED | SCL | **GPIO 21** |
-| PREV button | one leg | **GPIO 25** |
-| PREV button | other leg | GND |
-| NEXT button | one leg | **GPIO 26** |
-| NEXT button | other leg | GND |
+| <samp>SSD1306 OLED</samp> | <samp>VCC</samp> | <samp>3V3</samp> |
+| <samp>SSD1306 OLED</samp> | <samp>GND</samp> | <samp>GND</samp> |
+| <samp>SSD1306 OLED</samp> | <samp>SDA</samp> | <samp>GPIO 22</samp> |
+| <samp>SSD1306 OLED</samp> | <samp>SCL</samp> | <samp>GPIO 21</samp> |
+| <samp>PREV button</samp> | <samp>one leg</samp> | <samp>GPIO 25</samp> |
+| <samp>PREV button</samp> | <samp>other leg</samp> | <samp>GND</samp> |
+| <samp>NEXT button</samp> | <samp>one leg</samp> | <samp>GPIO 26</samp> |
+| <samp>NEXT button</samp> | <samp>other leg</samp> | <samp>GND</samp> |
 
-- **OLED I2C address:** `0x3C`.
-- **Buttons:** use the ESP32's internal pull-ups (`INPUT_PULLUP`), so no external resistors are needed. A pressed button reads `LOW`.
-- **Swapped I2C pins:** this project sets SDA = GPIO 22 and SCL = GPIO 21 with `Wire.begin(22, 21)`. That's the reverse of the ESP32's usual default (SDA 21, SCL 22), so wire it as shown in the table.
+<samp><b>OLED address:</b> <code>0x3C</code>. Buttons use <code>INPUT_PULLUP</code>, so a pressed button reads <code>LOW</code>. This project intentionally uses <code>SDA = GPIO 22</code> and <code>SCL = GPIO 21</code> via <code>Wire.begin(22, 21)</code>.</samp>
 
-## Modes
+---
 
-### Normal Mode
+<div align="center"><samp><b>Modes</b></samp></div>
 
-The ESP32 starts in Normal Mode, on the first video.
+<samp><b>Normal Mode</b></samp>
 
-- **GPIO 25 (PREV):** previous item.
-- **GPIO 26 (NEXT):** next item.
-- **What it cycles through:** only the 4 videos and 6 images, wrapping around at either end. Eye expressions never appear here.
-- **Videos** loop continuously at their own frame rate. **Images** stay on screen.
+- <samp>Starts with the first video.</samp>
+- <samp>PREV and NEXT browse the 4 videos and 6 images.</samp>
+- <samp>Videos loop continuously at their configured frame rate.</samp>
+- <samp>Images remain on screen until navigation changes the item.</samp>
 
-### Eye Mode
+<samp><b>Eye Mode</b></samp>
 
-- **Enter:** press **both buttons at the same time**.
-- **First expression:** chosen automatically as soon as Eye Mode starts.
-- **Selection:** expressions are picked at random using a mood weight table, so common moods appear more often than rare ones (see [Eye Expressions](#eye-expressions)).
-- **No manual control:** PREV and NEXT don't change the expression in Eye Mode. Single presses are ignored.
-- **Animation:** the current expression animates continuously, at about 30 frames per second.
-- **Switching:** after a random time within that expression's range, a new one is picked and its animation starts from the beginning. The same expression is never picked twice in a row.
+- <samp>Press PREV and NEXT together to enter.</samp>
+- <samp>An expression is selected immediately using the mood weights.</samp>
+- <samp>The selected expression animates at about 30 FPS.</samp>
+- <samp>After a randomized interval, another expression is selected.</samp>
+- <samp>The same expression is never selected twice in a row.</samp>
+- <samp>Single PREV/NEXT presses are ignored in Eye Mode.</samp>
 
-### Exiting Eye Mode
+<samp><b>Exit</b></samp>
 
-- Press **both buttons at the same time** again.
-- The display returns to the same video or image that was showing before Eye Mode, and a video continues from the frame it was on.
-- Exiting never moves to the next or previous item.
+- <samp>Press both buttons together again to return to the exact video or image that was previously displayed.</samp>
+- <samp>If a video was playing, it resumes from its previous frame.</samp>
 
-## Eye Expressions
+---
 
-These are the 13 expressions in the `eyeVariants[]` table in `EyeVariants.h`. The animation descriptions come from the `eyeAnims[]` table, and the weights and times from `eyeMoods[]` in `v3.ino`.
+<div align="center"><samp><b>Eye Expressions</b></samp></div>
 
-| # | Name | Animation | Weight | Time on screen |
-|---|---|---|---|---|
-| 1 | Neutral | Gentle breathing (slight size pulse) and a natural blink every 3.5 s | 20 | 5–10 s |
-| 2 | Blink (high) | Looking up; eyes open → half closed → closed → half closed → open, repeating | 8 | 2.5–4 s |
-| 3 | Glee | Bouncing up and down | 10 | 3–6 s |
-| 4 | Sad (looking up to user) | Looking up with a pleading quiver, and blinking | 3 | 4–7 s |
-| 5 | Worried | Nervous left/right glances and a quiver, with blinking | 3 | 4–7 s |
-| 6 | Focused/Determined | Slow narrowing pulse, with a rare blink | 5 | 4–8 s |
-| 7 | Annoyed | Glances away and back, with a slow blink | 4 | 4–7 s |
-| 8 | Frustrated/Bored | Wanders around in several directions, with a slow blink | 4 | 4–7 s |
-| 9 | Sleepy Eyes | Drooping lids with a slow, heavy blink | 5 | 5–9 s |
-| 10 | Suspicious | Shifty left/right look, with blinking | 6 | 4–7 s |
-| 11 | Angry | Small up/down jitter, with blinking | 4 | 3–6 s |
-| 12 | Scared | Trembling with darting side looks, and quick blinks | 2 | 3–5 s |
-| 13 | Awe | Slow "wonder" pulse looking slightly up, with blinking | 2 | 3–6 s |
+| <samp>#</samp> | <samp>Name</samp> | <samp>Animation</samp> | <samp>Weight</samp> | <samp>Time</samp> |
+|---:|---|---|---:|---|
+| <samp>1</samp> | <samp>Neutral</samp> | <samp>Gentle breathing and natural blinking</samp> | <samp>20</samp> | <samp>5–10 s</samp> |
+| <samp>2</samp> | <samp>Blink (high)</samp> | <samp>Looking up with repeated blink cycle</samp> | <samp>8</samp> | <samp>2.5–4 s</samp> |
+| <samp>3</samp> | <samp>Glee</samp> | <samp>Bouncing up and down</samp> | <samp>10</samp> | <samp>3–6 s</samp> |
+| <samp>4</samp> | <samp>Sad</samp> | <samp>Pleading upward look with quiver</samp> | <samp>3</samp> | <samp>4–7 s</samp> |
+| <samp>5</samp> | <samp>Worried</samp> | <samp>Nervous glances and quiver</samp> | <samp>3</samp> | <samp>4–7 s</samp> |
+| <samp>6</samp> | <samp>Focused / Determined</samp> | <samp>Slow narrowing pulse</samp> | <samp>5</samp> | <samp>4–8 s</samp> |
+| <samp>7</samp> | <samp>Annoyed</samp> | <samp>Glance away and return</samp> | <samp>4</samp> | <samp>4–7 s</samp> |
+| <samp>8</samp> | <samp>Frustrated / Bored</samp> | <samp>Multi-direction wandering</samp> | <samp>4</samp> | <samp>4–7 s</samp> |
+| <samp>9</samp> | <samp>Sleepy Eyes</samp> | <samp>Drooping lids and heavy blinking</samp> | <samp>5</samp> | <samp>5–9 s</samp> |
+| <samp>10</samp> | <samp>Suspicious</samp> | <samp>Shifty left/right look</samp> | <samp>6</samp> | <samp>4–7 s</samp> |
+| <samp>11</samp> | <samp>Angry</samp> | <samp>Small jitter with blinking</samp> | <samp>4</samp> | <samp>3–6 s</samp> |
+| <samp>12</samp> | <samp>Scared</samp> | <samp>Trembling and darting side looks</samp> | <samp>2</samp> | <samp>3–5 s</samp> |
+| <samp>13</samp> | <samp>Awe</samp> | <samp>Slow wonder pulse</samp> | <samp>2</samp> | <samp>3–6 s</samp> |
 
-A higher weight means the expression is picked more often. The weights add up to 76, so before the no-repeat rule Neutral is picked about 26% of the time, and Scared or Awe about 3%.
+<samp>The weights total 76. Higher values make an expression more likely to be selected before the no-repeat rule is applied.</samp>
 
-## Eye Mode Preview
+---
+
+<div align="center"><samp><b>Eye Mode Preview</b></samp></div>
 
 ![Animated preview of the 13 eye variants used by Eye Mode](docs/eye-mode-preview.gif)
 
-*Animated preview of the eye variants used by Eye Mode.*
+<div align="center"><samp>The preview uses the same eye shapes and animation values as <code>EyeVariants.h</code>. The physical 128×64 OLED may differ by a few pixels.</samp></div>
 
-The preview shows the 13 eye expressions available in Eye Mode, all animating side by side for about 6 seconds. On the device, only one expression is shown at a time:
+---
 
-1. **Enter:** press **both buttons** together.
-2. **Automatic selection:** Eye Mode picks an expression at random using the mood weights above.
-3. **Continuous animation:** the expression animates using the system in `EyeVariants.h` (`eyeAnims[]`, `drawEyeFrame()`), which combines breathing or pulsing, blinking and look direction.
-4. **Switching:** after a random time it switches to a different expression, never the same one twice in a row.
-5. **Exit:** press **both buttons** again to return to the video or image you were on.
+<div align="center"><samp><b>Button Behavior</b></samp></div>
 
-The preview was rendered in software with the same shapes and animation values as `EyeVariants.h`. The real 128×64 OLED may differ by a few pixels.
-
-## Button Behavior
-
-- **Debounce:** each button must read the same for 30 ms before a press or release counts.
-- **Simultaneous press:** a single press waits up to 80 ms (or until you release, if sooner) to see whether the other button follows. If both are down together, it's treated as a both-button press and neither single action fires.
-- **Both buttons:** switches between Normal Mode and Eye Mode.
-- **Holding:** holding both buttons switches mode only once. Nothing else happens until both are released, and releasing or re-pressing one button while the other is still held does nothing.
-- **Holding one button:** fires once, not repeatedly. If you then press the other button while still holding the first, it still counts as a both-button press and switches mode.
-- **Repeat limit:** single PREV/NEXT actions in Normal Mode are at least 200 ms apart.
-
-| Input | Normal Mode | Eye Mode |
+| <samp>Input</samp> | <samp>Normal Mode</samp> | <samp>Eye Mode</samp> |
 |---|---|---|
-| PREV (GPIO 25) | Previous video/image | Ignored |
-| NEXT (GPIO 26) | Next video/image | Ignored |
-| PREV + NEXT | Enter Eye Mode | Exit to the same video/image |
+| <samp>PREV</samp> | <samp>Previous video/image</samp> | <samp>Ignored</samp> |
+| <samp>NEXT</samp> | <samp>Next video/image</samp> | <samp>Ignored</samp> |
+| <samp>PREV + NEXT</samp> | <samp>Enter Eye Mode</samp> | <samp>Exit to the same video/image</samp> |
 
-## Software
+<samp><b>Debounce:</b> 30 ms stable input.</samp>
 
-- [Arduino IDE](https://www.arduino.cc/en/software)
-- **ESP32 Arduino core** (Espressif). Checked against version 2.0.17.
-- **Adafruit SSD1306:** drives the OLED.
-- **Adafruit GFX Library:** drawing (bitmaps, rectangles, triangles, lines).
-- **Adafruit BusIO:** a dependency of the two Adafruit libraries. The Library Manager installs it automatically.
-- **Wire:** I2C. Built into the ESP32 core.
+<samp><b>Combination window:</b> up to 80 ms for detecting a simultaneous press.</samp>
 
-The sketch doesn't use the `esp32-eyes` library at build time. Its drawing code was copied into `EyeVariants.h` and adapted for Adafruit GFX, so U8g2 isn't needed.
+<samp><b>Single-button repeat:</b> a single PREV/NEXT action is limited to at most one action every 200 ms.</samp>
 
-## Project Structure
+<samp>Holding both buttons switches mode only once and does not trigger repeated mode changes until both buttons are released.</samp>
 
-```
+---
+
+<div align="center"><samp><b>Software</b></samp></div>
+
+- <samp>Arduino IDE</samp>
+- <samp>ESP32 Arduino core — checked against version 2.0.17</samp>
+- <samp>Adafruit SSD1306</samp>
+- <samp>Adafruit GFX Library</samp>
+- <samp>Adafruit BusIO</samp>
+- <samp>Wire / I2C</samp>
+
+<samp>The project uses Adafruit GFX for drawing. The original <code>esp32-eyes</code> library is included only as reference; it is not linked or compiled as a dependency. Its eye drawing and animation logic was adapted into <code>EyeVariants.h</code>.</samp>
+
+---
+
+<div align="center"><samp><b>Project Structure</b></samp></div>
+
+```text
 oled-project/
-├── v3.ino              Main sketch: video/image bitmaps, content table, modes,
-│                       buttons, Eye Mode mood selection
-├── EyeVariants.h       13 eye expressions: presets, drawing, animation
-├── README.md           This file
+├── v3.ino                    Main sketch, content data, modes, buttons
+├── EyeVariants.h              Eye presets, drawing, animation
+├── README.md                  Project documentation
 ├── docs/
-│   └── eye-mode-preview.gif   Animated preview of the eye expressions (used in this README)
-└── esp32-eyes-main/    Original esp32-eyes library (AGPL-3.0), reference only, not compiled
+│   └── eye-mode-preview.gif   Eye Mode animated preview
+└── esp32-eyes-main/           Reference copy of esp32-eyes
     ├── LICENSE
     ├── README.md
     ├── esp32-eyes.ino
-    ├── *.h / *.cpp / *.hpp   (Face, Eye, EyeDrawer, EyePresets, animations, ...)
-    └── doc/            Reference images and diagrams
+    ├── *.h / *.cpp / *.hpp
+    └── doc/
 ```
 
-All video and image data is inside `v3.ino` as `PROGMEM` arrays (`video1_frame0` …, `image1` …). There are no separate content files.
+<samp>All video and image bitmap data is stored in <code>v3.ino</code> as <code>PROGMEM</code> arrays. There are no separate content files.</samp>
 
-## Installation
+---
 
-1. **Get the code:**
-   ```bash
-   git clone https://github.com/yo5on/oled-project.git v3
-   ```
-   The Arduino IDE needs the folder to have the same name as the `.ino` file. Cloning into a folder named `v3`, as above, avoids that problem. If you clone or download it under another name, the IDE will offer to move `v3.ino` into a `v3` folder when you open it; accept that, and copy `EyeVariants.h` into the same folder.
-2. **Open the sketch:** open `v3/v3.ino` in the Arduino IDE. `EyeVariants.h` opens as a second tab.
-3. **Install the ESP32 core:** in **Boards Manager**, install **esp32 by Espressif Systems**.
-4. **Install the libraries:** in **Library Manager**, install **Adafruit SSD1306**, and accept its dependencies (Adafruit GFX Library, Adafruit BusIO).
-5. **Select the board:** **Tools → Board → esp32 → ESP32 Dev Module**.
-6. **Select the port:** **Tools → Port**, the COM port of your ESP32.
-7. **Upload.** If the upload stalls at `Connecting...`, hold the board's **BOOT** button until it starts.
-8. **Test:**
-   - open **Serial Monitor** at **115200** baud and check for `OLED READY`;
-   - press NEXT and PREV and check the content changes;
-   - press both buttons and check for `EYE MODE` followed by `Eye Mode: <name>`.
+<div align="center"><samp><b>Installation</b></samp></div>
 
-## Usage
+<samp><b>1. Get the code</b></samp>
 
-1. **Power on:** the OLED starts in Normal Mode, showing Video 1.
-2. **NEXT / PREV:** step through the 4 videos and 6 images. Serial shows `Next: <slot>` or `Previous: <slot>`.
-3. **Both buttons:** enter Eye Mode. Serial shows `EYE MODE`, and an expression is chosen right away (`Eye Mode: <name>`).
-4. **Wait:** the eyes animate continuously and switch to a new mood-weighted expression every few seconds, each logged as `Eye Mode: <name>`. PREV and NEXT do nothing here.
-5. **Both buttons again:** Serial shows `NORMAL MODE`, and the display returns to the same video or image as before.
+```bash
+git clone https://github.com/yo5on/oled-project.git v3
+```
 
-## Troubleshooting
+<samp>The Arduino IDE expects the sketch folder name to match the <code>.ino</code> filename. Cloning into <code>v3</code> keeps <code>v3.ino</code> in the correct folder.</samp>
 
-| Problem | What to check |
+<samp><b>2. Open the sketch</b></samp>
+
+<samp>Open <code>v3/v3.ino</code> in Arduino IDE. Keep <code>EyeVariants.h</code> in the same folder.</samp>
+
+<samp><b>3. Install ESP32 support</b></samp>
+
+<samp>Use Boards Manager to install <b>esp32 by Espressif Systems</b>.</samp>
+
+<samp><b>4. Install libraries</b></samp>
+
+<samp>Use Library Manager to install <b>Adafruit SSD1306</b> and its dependencies.</samp>
+
+<samp><b>5. Select the board</b></samp>
+
+<samp><b>Tools → Board → esp32 → ESP32 Dev Module</b></samp>
+
+<samp><b>6. Select the port</b></samp>
+
+<samp>Choose the COM port connected to the ESP32.</samp>
+
+<samp><b>7. Upload</b></samp>
+
+<samp>If upload stalls at <code>Connecting...</code>, hold the board's <b>BOOT</b> button while the upload starts.</samp>
+
+<samp><b>8. Test</b></samp>
+
+- <samp>Open Serial Monitor at <b>115200</b> baud and check for <code>OLED READY</code>.</samp>
+- <samp>Press NEXT and PREV to verify content navigation.</samp>
+- <samp>Press both buttons together and check for <code>EYE MODE</code>.</samp>
+
+---
+
+<div align="center"><samp><b>Usage</b></samp></div>
+
+1. <samp>Power on. Normal Mode starts on Video 1.</samp>
+2. <samp>Use PREV/NEXT to cycle through 4 videos and 6 images.</samp>
+3. <samp>Press both buttons to enter Eye Mode.</samp>
+4. <samp>Watch the selected eye expression animate and transition automatically.</samp>
+5. <samp>Press both buttons again to return to the same video or image.</samp>
+
+---
+
+<div align="center"><samp><b>Current Content</b></samp></div>
+
+| <samp>Content</samp> | <samp>Count</samp> | <samp>Defined in</samp> |
+|---|---:|---|
+| <samp>Videos</samp> | <samp>4</samp> | <samp><code>v3.ino</code>, <code>contents[]</code></samp> |
+| <samp>Images</samp> | <samp>6</samp> | <samp><code>v3.ino</code>, <code>contents[]</code></samp> |
+| <samp>Eye variants</samp> | <samp>13</samp> | <samp><code>EyeVariants.h</code></samp> |
+
+<samp><b>Normal Mode order:</b> <code>video1 → video4 → video3 → video2 → image1 → image2 → image3 → image4 → image5 → image7</code></samp>
+
+| <samp>Video</samp> | <samp>Frame time</samp> | <samp>Approx. FPS</samp> |
+|---|---:|---:|
+| <samp><code>video1</code></samp> | <samp>91 ms</samp> | <samp>~11</samp> |
+| <samp><code>video4</code></samp> | <samp>66 ms</samp> | <samp>~15</samp> |
+| <samp><code>video3</code></samp> | <samp>149 ms</samp> | <samp>~6.7</samp> |
+| <samp><code>video2</code></samp> | <samp>200 ms</samp> | <samp>5</samp> |
+
+---
+
+<div align="center"><samp><b>Troubleshooting</b></samp></div>
+
+| <samp>Problem</samp> | <samp>What to check</samp> |
 |---|---|
-| OLED stays blank | Wiring: SDA must go to **GPIO 22** and SCL to **GPIO 21**, the reverse of the usual ESP32 default. Power the OLED from 3V3 and GND. |
-| Serial shows `SSD1306 allocation failed` | The display didn't start. Check the wiring and the I2C address. |
-| Wrong I2C address | The sketch uses `0x3C` (`#define SCREEN_ADDR 0x3C` in `v3.ino`). Some modules use `0x3D`; change the define to match. |
-| Buttons don't respond | Each button goes between its GPIO (25 or 26) and **GND**, not 3V3. Check in Serial Monitor for `Next:` / `Previous:`. |
-| Eye Mode won't start | Press both buttons within about 80 ms of each other and hold them for a moment. Serial should show `EYE MODE`. |
-| PREV/NEXT do nothing | Expected while in Eye Mode. Press both buttons to return to Normal Mode. |
-| Eyes don't animate | Check Serial for `Eye Mode: <name>` lines. If they appear but the screen freezes, check the OLED wiring and power. Animation needs no extra setup. |
-| Compile errors about missing headers | Install **Adafruit SSD1306** with its dependencies, and select an **ESP32** board, not an AVR/Uno. Keep `EyeVariants.h` in the same folder as `v3.ino`. |
-| Upload hangs at `Connecting...` | Hold **BOOT** while the upload starts, and check the COM port and USB cable. |
-| `Sketch too big` | The bitmaps take about 600 KB of flash, which fits the default *4MB with spiffs (1.2MB APP)* scheme. If you add content, pick a larger app partition under **Tools → Partition Scheme** (for example *Huge APP*). |
+| <samp>OLED stays blank</samp> | <samp>Verify SDA = GPIO 22, SCL = GPIO 21, VCC = 3V3, GND = GND.</samp> |
+| <samp>SSD1306 allocation failed</samp> | <samp>Check power, wiring, and I2C address <code>0x3C</code>.</samp> |
+| <samp>Wrong I2C address</samp> | <samp>The sketch uses <code>0x3C</code>. Some modules use <code>0x3D</code>.</samp> |
+| <samp>Buttons do not respond</samp> | <samp>Connect each button between its GPIO and GND. Buttons use <code>INPUT_PULLUP</code>.</samp> |
+| <samp>Eye Mode will not start</samp> | <samp>Press both buttons within about 80 ms of each other.</samp> |
+| <samp>PREV/NEXT do nothing</samp> | <samp>Expected in Eye Mode. Press both buttons to return to Normal Mode.</samp> |
+| <samp>Upload hangs at Connecting...</samp> | <samp>Hold BOOT while uploading and verify the COM port and USB cable.</samp> |
+| <samp>Compile errors about missing headers</samp> | <samp>Install Adafruit SSD1306 and its dependencies, select an ESP32 board, and keep EyeVariants.h beside v3.ino.</samp> |
+| <samp>Sketch too big</samp> | <samp>The bitmap data uses about 600 KB of flash. Use a larger app partition if you add more content.</samp> |
 
-## Current Content
+---
 
-| Content | Count | Defined in |
-|---|---|---|
-| Videos | 4 (150, 150, 150 and 125 frames) | `v3.ino`, `contents[]` (`VIDEO` slots) |
-| Images | 6 | `v3.ino`, `contents[]` (`IMAGE` slots) |
-| Eye variants | 13 | `EyeVariants.h`, `EyeVariantId` / `eyeVariants[]` |
+<div align="center"><samp><b>Development Notes</b></samp></div>
 
-Normal Mode order (slots 0–9 of `contents[]`):
-
-| Slot | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Item | `video1` | `video4` | `video3` | `video2` | `image1` | `image2` | `image3` | `image4` | `image5` | `image7` |
-
-The names come from the code: the videos were reordered, and the 6th image is named `image7` because the original Image 6 was removed.
-
-| Video | Frame time | Frame rate |
-|---|---|---|
-| `video1` | 91 ms | ~11 fps |
-| `video4` | 66 ms | ~15 fps |
-| `video3` | 149 ms | ~6.7 fps |
-| `video2` | 200 ms | 5 fps |
-
-## Development Notes
-
-| What | Where |
+| <samp>Area</samp> | <samp>Implementation</samp> |
 |---|---|
-| Pins and OLED settings | `v3.ino`: `BTN_PREV`, `BTN_NEXT`, `SCREEN_ADDR`, `Wire.begin(22, 21)` in `setup()` |
-| Content table | `v3.ino`: `contents[]` (`VIDEO` / `IMAGE` / `EYES` slots); `TOTAL_CONTENT` is calculated from it; video speed per slot in `videoFrameMs[]` |
-| Normal navigation | `v3.ino`: `nextContent()` and `previousContent()` (skip `EYES` slots); `playContent()` draws videos and images |
-| Eye variants | `EyeVariants.h`: `EyeVariantId` enum, `eyeVariants[]` (name, presets, look, blink) and the `Preset_*` shapes |
-| Eye drawing | `EyeVariants.h`: `eyeDraw()` (ported `EyeDrawer::Draw`), `eyeFinalConfig()` |
-| Eye animation | `EyeVariants.h`: `eyeAnims[]` (motion, blink timing, look paths), `drawEyeFrame()`, `eyeAnimRestart()`, `eyeAnimUpdate()` (one frame every `EYE_FRAME_MS` = 33 ms) |
-| Mood / random selection | `v3.ino`: `eyeMoods[]` (weight, min/max ms), `pickRandomEye()`, `autoSelectEye()`, `updateEyeAnimation()` |
-| Modes | `v3.ino`: `enum Mode`, `enterEyeMode()`, `exitEyeMode()`, `loop()` |
-| Button handling | `v3.ino`: `DebouncedButton`, `updateButton()`, `singlePressReady()`, `handleButtons()`, `handleNormalModeButtons()`; timing in `stableTime`, `comboWindow`, `debounceTime` |
+| <samp>Pins and OLED</samp> | <samp><code>v3.ino</code>: <code>BTN_PREV</code>, <code>BTN_NEXT</code>, <code>SCREEN_ADDR</code>, <code>Wire.begin(22, 21)</code></samp> |
+| <samp>Content</samp> | <samp><code>contents[]</code>, <code>videoFrameMs[]</code>, and <code>PROGMEM</code> bitmap arrays</samp> |
+| <samp>Normal navigation</samp> | <samp><code>nextContent()</code>, <code>previousContent()</code>, <code>playContent()</code></samp> |
+| <samp>Eye variants</samp> | <samp><code>EyeVariantId</code>, <code>eyeVariants[]</code>, preset shapes in <code>EyeVariants.h</code></samp> |
+| <samp>Eye animation</samp> | <samp><code>eyeAnims[]</code>, <code>drawEyeFrame()</code>, <code>eyeAnimRestart()</code>, <code>eyeAnimUpdate()</code></samp> |
+| <samp>Mood selection</samp> | <samp><code>eyeMoods[]</code>, <code>pickRandomEye()</code>, <code>autoSelectEye()</code>, <code>updateEyeAnimation()</code></samp> |
+| <samp>Modes</samp> | <samp><code>Mode</code>, <code>enterEyeMode()</code>, <code>exitEyeMode()</code>, <code>loop()</code></samp> |
+| <samp>Buttons</samp> | <samp><code>DebouncedButton</code>, <code>updateButton()</code>, <code>handleButtons()</code>, timing controls</samp> |
 
-**Adding or removing an eye expression:** keep `EyeVariantId`, `eyeVariants[]`, `eyeAnims[]` and `eyeMoods[]` in the same order and length. Compile-time checks fail the build if their lengths don't match.
+<samp>When adding or removing an eye expression, keep <code>EyeVariantId</code>, <code>eyeVariants[]</code>, <code>eyeAnims[]</code>, and <code>eyeMoods[]</code> in the same order and length.</samp>
 
-**Timing:** all timing uses `millis()`. There's no `delay()` in the main loop, so the buttons stay responsive while videos play and eyes animate.
+---
 
-## License
+<div align="center"><samp><b>License</b></samp></div>
 
-The eye drawing and animation code in `EyeVariants.h` is derived from [esp32-eyes](https://github.com/playfultechnology/esp32-eyes) by Alastair Aitchison (Playful Technology) and Luis Llamas, licensed under AGPL-3.0. See `esp32-eyes-main/LICENSE`.
+<samp>The eye drawing and animation code in <code>EyeVariants.h</code> is derived from <a href="https://github.com/playfultechnology/esp32-eyes">esp32-eyes</a> by Alastair Aitchison (Playful Technology) and Luis Llamas, licensed under AGPL-3.0. See <code>esp32-eyes-main/LICENSE</code>.</samp>
+
+<div align="center"><samp><b>Author</b></samp></div>
+
+<div align="center">
+<samp><strong>Yoson</strong></samp>
+
+<samp>Embedded systems, robotics, and hardware projects.</samp>
+</div>
