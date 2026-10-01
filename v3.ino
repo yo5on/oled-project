@@ -39065,7 +39065,8 @@ const unsigned long videoFrameMs[TOTAL_CONTENT] = {
 // =====================================================
 
 // NORMAL_MODE: PREV/NEXT step through contents[] (unchanged)
-// EYE_MODE:    PREV/NEXT step through the 21 eyeVariants[]
+// EYE_MODE:    autonomous - picks mood-weighted random eyeVariants[];
+//              single PREV/NEXT presses are ignored
 // Press PREV + NEXT together to toggle between the two.
 enum Mode {
   NORMAL_MODE,
@@ -39253,27 +39254,88 @@ void playContent() {
 // EYE MODE
 // =====================================================
 
+// Mood table for autonomous EYE_MODE: how often each expression is
+// picked (relative weight) and how long it stays (random min..max ms).
+// Same order as eyeVariants[] / EyeVariantId.
+struct EyeMood {
+  uint8_t weight;
+  uint16_t minMs;
+  uint16_t maxMs;
+};
+
+const EyeMood eyeMoods[EYE_VARIANT_COUNT] = {
+  { 20, 5000, 10000 },  //  1. Neutral             - common
+  {  8, 2500,  4000 },  //  2. Blink (high)        - common, short
+  { 14, 4000,  8000 },  //  3. Happy               - common
+  { 10, 3000,  6000 },  //  4. Glee                - common
+  {  8, 2500,  4000 },  //  5. Blink (low)         - common, short
+  {  3, 4000,  7000 },  //  6. Sad (looking down)  - less frequent
+  {  3, 4000,  7000 },  //  7. Sad (looking up)    - less frequent
+  {  3, 4000,  7000 },  //  8. Worried             - less frequent
+  {  5, 4000,  8000 },  //  9. Focused/Determined  - occasional
+  {  4, 4000,  7000 },  // 10. Annoyed             - occasional
+  {  2, 3000,  5000 },  // 11. Surprised           - rare
+  {  6, 4000,  7000 },  // 12. Skeptic             - occasional (curious)
+  {  4, 4000,  7000 },  // 13. Frustrated/Bored    - occasional
+  {  5, 4000,  7000 },  // 14. Unimpressed         - occasional
+  {  5, 5000,  9000 },  // 15. Sleepy Eyes         - occasional
+  {  6, 4000,  7000 },  // 16. Suspicious          - occasional (curious)
+  {  4, 3000,  6000 },  // 17. Squint              - occasional
+  {  4, 3000,  6000 },  // 18. Angry               - occasional
+  {  3, 3000,  5000 },  // 19. Furious             - occasional
+  {  2, 3000,  5000 },  // 20. Scared              - rare
+  {  2, 3000,  6000 },  // 21. Awe                 - rare
+};
+
+unsigned long eyeShownAtMs = 0;   // when currentEye was selected
+unsigned long eyeHoldMs = 0;      // how long currentEye stays
+
+// Weighted random pick that never returns `exclude` (no immediate repeat)
+uint8_t pickRandomEye(uint8_t exclude) {
+  uint16_t total = 0;
+  for (uint8_t i = 0; i < EYE_VARIANT_COUNT; i++) {
+    if (i != exclude) total += eyeMoods[i].weight;
+  }
+
+  long r = random(total);
+  for (uint8_t i = 0; i < EYE_VARIANT_COUNT; i++) {
+    if (i == exclude) continue;
+    r -= eyeMoods[i].weight;
+    if (r < 0) return i;
+  }
+  return (exclude == EYE_NEUTRAL) ? EYE_HAPPY : EYE_NEUTRAL;  // not reached
+}
+
 // Select currentEye: restart its animation and draw the first frame now
 void showEye() {
   eyeAnimRestart();
   eyeAnimUpdate(currentEye, true);
-  Serial.print("Eye ");
-  Serial.print(currentEye + 1);
-  Serial.print("/");
-  Serial.print(EYE_VARIANT_COUNT);
-  Serial.print(": ");
+  Serial.print("Eye Mode: ");
   Serial.println(eyeVariants[currentEye].name);
+}
+
+// Pick the next expression (different from `exclude`) and how long it stays
+void autoSelectEye(uint8_t exclude) {
+  currentEye = pickRandomEye(exclude);
+  const EyeMood &m = eyeMoods[currentEye];
+  eyeHoldMs = random(m.minMs, m.maxMs + 1);
+  eyeShownAtMs = millis();
+  showEye();
 }
 
 void enterEyeMode() {
   currentMode = EYE_MODE;
-  currentEye = EYE_NEUTRAL;
   Serial.println("EYE MODE");
-  showEye();
+  autoSelectEye(EYE_VARIANT_COUNT);   // nothing to exclude yet
 }
 
-// Called every loop() in EYE_MODE; draws a frame every EYE_FRAME_MS
+// Called every loop() in EYE_MODE: switch expression when its time is up,
+// otherwise draw the next animation frame (every EYE_FRAME_MS)
 void updateEyeAnimation() {
+  if (millis() - eyeShownAtMs >= eyeHoldMs) {
+    autoSelectEye(currentEye);
+    return;
+  }
   eyeAnimUpdate(currentEye, false);
 }
 
@@ -39320,17 +39382,6 @@ void handleNormalModeButtons(bool prev, bool next) {
   else if (next) nextContent();
 }
 
-void handleEyeModeButtons(bool prev, bool next) {
-  if (prev) {
-    currentEye = (currentEye == 0) ? EYE_VARIANT_COUNT - 1 : currentEye - 1;
-    showEye();
-  }
-  else if (next) {
-    currentEye = (currentEye + 1) % EYE_VARIANT_COUNT;
-    showEye();
-  }
-}
-
 void handleButtons() {
   updateButton(btnPrev);
   updateButton(btnNext);
@@ -39357,11 +39408,14 @@ void handleButtons() {
   bool prev = singlePressReady(btnPrev);
   bool next = singlePressReady(btnNext);
   if (!prev && !next) return;
+
+  // EYE_MODE is autonomous: single PREV/NEXT presses are ignored
+  if (currentMode != NORMAL_MODE) return;
+
   if (millis() - lastButtonTime <= debounceTime) return;
   lastButtonTime = millis();
 
-  if (currentMode == NORMAL_MODE) handleNormalModeButtons(prev, next);
-  else handleEyeModeButtons(prev, next);
+  handleNormalModeButtons(prev, next);
 }
 
 
