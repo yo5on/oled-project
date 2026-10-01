@@ -1,5 +1,5 @@
 // =====================================================
-// OLED 128x64 — 4 VIDEOS + 6 IMAGES + 21 ANIMATED EYES
+// OLED 128x64 — 4 VIDEOS + 6 IMAGES + ANIMATED EYES
 // LEFT BUTTON  = PREVIOUS
 // RIGHT BUTTON = NEXT
 // BOTH BUTTONS = ENTER / EXIT EYE MODE
@@ -25,7 +25,7 @@ Adafruit_SSD1306 display(
   OLED_RESET
 );
 
-// 21 ESP32 Eyes variants (drawn live, no bitmaps) - see EyeVariants.h
+// ESP32 Eyes variants (drawn live, no bitmaps) - see EyeVariants.h
 #include "EyeVariants.h"
 
 
@@ -39011,11 +39011,9 @@ struct Content {
 
 int currentContent = 0;
 
-const int TOTAL_CONTENT = 31;
-
-// Slots 0-3 = videos 1-4, slots 4-9 = images 1-5 and 7, slots 10-30 = eye variants 1-21.
+// Slots 0-3 = videos 1-4, slots 4-9 = images 1-5 and 7, slots 10+ = eye variants.
 // Empty slots ({IMAGE, nullptr, 0, nullptr}) show "not loaded".
-Content contents[TOTAL_CONTENT] = {
+Content contents[] = {
   { VIDEO, video1Frames, video1FrameCount, nullptr },  // 0: Video 1
   { VIDEO, video4Frames, video4FrameCount, nullptr },  // 1: Video 4
   { VIDEO, video3Frames, video3FrameCount, nullptr },  // 2: Video 3
@@ -39028,26 +39026,20 @@ Content contents[TOTAL_CONTENT] = {
   { IMAGE, nullptr, 0, image7 },                       // 9: Image 7
   { EYES,  nullptr, EYE_NEUTRAL, nullptr },            // 10: Eye 1 - Neutral
   { EYES,  nullptr, EYE_BLINK_HIGH, nullptr },         // 11: Eye 2 - Blink (high)
-  { EYES,  nullptr, EYE_HAPPY, nullptr },              // 12: Eye 3 - Happy
-  { EYES,  nullptr, EYE_GLEE, nullptr },               // 13: Eye 4 - Glee
-  { EYES,  nullptr, EYE_BLINK_LOW, nullptr },          // 14: Eye 5 - Blink (low)
-  { EYES,  nullptr, EYE_SAD_DOWN, nullptr },           // 15: Eye 6 - Sad (looking down)
-  { EYES,  nullptr, EYE_SAD_UP, nullptr },             // 16: Eye 7 - Sad (looking up to user)
-  { EYES,  nullptr, EYE_WORRIED, nullptr },            // 17: Eye 8 - Worried
-  { EYES,  nullptr, EYE_FOCUSED, nullptr },            // 18: Eye 9 - Focused/Determined
-  { EYES,  nullptr, EYE_ANNOYED, nullptr },            // 19: Eye 10 - Annoyed
-  { EYES,  nullptr, EYE_SURPRISED, nullptr },          // 20: Eye 11 - Surprised
-  { EYES,  nullptr, EYE_SKEPTIC, nullptr },            // 21: Eye 12 - Skeptic
-  { EYES,  nullptr, EYE_FRUSTRATED, nullptr },         // 22: Eye 13 - Frustrated/Bored
-  { EYES,  nullptr, EYE_UNIMPRESSED, nullptr },        // 23: Eye 14 - Unimpressed
-  { EYES,  nullptr, EYE_SLEEPY, nullptr },             // 24: Eye 15 - Sleepy Eyes
-  { EYES,  nullptr, EYE_SUSPICIOUS, nullptr },         // 25: Eye 16 - Suspicious
-  { EYES,  nullptr, EYE_SQUINT, nullptr },             // 26: Eye 17 - Squint
-  { EYES,  nullptr, EYE_ANGRY, nullptr },              // 27: Eye 18 - Angry
-  { EYES,  nullptr, EYE_FURIOUS, nullptr },            // 28: Eye 19 - Furious
-  { EYES,  nullptr, EYE_SCARED, nullptr },             // 29: Eye 20 - Scared
-  { EYES,  nullptr, EYE_AWE, nullptr },                // 30: Eye 21 - Awe
+  { EYES,  nullptr, EYE_GLEE, nullptr },               // 12: Eye 3 - Glee
+  { EYES,  nullptr, EYE_SAD_UP, nullptr },             // 13: Eye 4 - Sad (looking up to user)
+  { EYES,  nullptr, EYE_WORRIED, nullptr },            // 14: Eye 5 - Worried
+  { EYES,  nullptr, EYE_FOCUSED, nullptr },            // 15: Eye 6 - Focused/Determined
+  { EYES,  nullptr, EYE_ANNOYED, nullptr },            // 16: Eye 7 - Annoyed
+  { EYES,  nullptr, EYE_FRUSTRATED, nullptr },         // 17: Eye 8 - Frustrated/Bored
+  { EYES,  nullptr, EYE_SLEEPY, nullptr },             // 18: Eye 9 - Sleepy Eyes
+  { EYES,  nullptr, EYE_SUSPICIOUS, nullptr },         // 19: Eye 10 - Suspicious
+  { EYES,  nullptr, EYE_ANGRY, nullptr },              // 20: Eye 11 - Angry
+  { EYES,  nullptr, EYE_SCARED, nullptr },             // 21: Eye 12 - Scared
+  { EYES,  nullptr, EYE_AWE, nullptr },                // 22: Eye 13 - Awe
 };
+
+const int TOTAL_CONTENT = sizeof(contents) / sizeof(contents[0]);
 
 // Frame time per slot in ms (only used by VIDEO slots)
 const unsigned long videoFrameMs[TOTAL_CONTENT] = {
@@ -39056,7 +39048,7 @@ const unsigned long videoFrameMs[TOTAL_CONTENT] = {
   149,  // 2: Video 3
   200,  // 3: Video 2
   0, 0, 0, 0, 0, 0,  // 4-9: images
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  // 10-30: eye variants
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0  // 10+: eye variants
 };
 
 
@@ -39263,29 +39255,22 @@ struct EyeMood {
   uint16_t maxMs;
 };
 
-const EyeMood eyeMoods[EYE_VARIANT_COUNT] = {
+const EyeMood eyeMoods[] = {
   { 20, 5000, 10000 },  //  1. Neutral             - common
   {  8, 2500,  4000 },  //  2. Blink (high)        - common, short
-  { 14, 4000,  8000 },  //  3. Happy               - common
-  { 10, 3000,  6000 },  //  4. Glee                - common
-  {  8, 2500,  4000 },  //  5. Blink (low)         - common, short
-  {  3, 4000,  7000 },  //  6. Sad (looking down)  - less frequent
-  {  3, 4000,  7000 },  //  7. Sad (looking up)    - less frequent
-  {  3, 4000,  7000 },  //  8. Worried             - less frequent
-  {  5, 4000,  8000 },  //  9. Focused/Determined  - occasional
-  {  4, 4000,  7000 },  // 10. Annoyed             - occasional
-  {  2, 3000,  5000 },  // 11. Surprised           - rare
-  {  6, 4000,  7000 },  // 12. Skeptic             - occasional (curious)
-  {  4, 4000,  7000 },  // 13. Frustrated/Bored    - occasional
-  {  5, 4000,  7000 },  // 14. Unimpressed         - occasional
-  {  5, 5000,  9000 },  // 15. Sleepy Eyes         - occasional
-  {  6, 4000,  7000 },  // 16. Suspicious          - occasional (curious)
-  {  4, 3000,  6000 },  // 17. Squint              - occasional
-  {  4, 3000,  6000 },  // 18. Angry               - occasional
-  {  3, 3000,  5000 },  // 19. Furious             - occasional
-  {  2, 3000,  5000 },  // 20. Scared              - rare
-  {  2, 3000,  6000 },  // 21. Awe                 - rare
+  { 10, 3000,  6000 },  //  3. Glee                - common
+  {  3, 4000,  7000 },  //  4. Sad (looking up)    - less frequent
+  {  3, 4000,  7000 },  //  5. Worried             - less frequent
+  {  5, 4000,  8000 },  //  6. Focused/Determined  - occasional
+  {  4, 4000,  7000 },  //  7. Annoyed             - occasional
+  {  4, 4000,  7000 },  //  8. Frustrated/Bored    - occasional
+  {  5, 5000,  9000 },  //  9. Sleepy Eyes         - occasional
+  {  6, 4000,  7000 },  // 10. Suspicious          - occasional (curious)
+  {  4, 3000,  6000 },  // 11. Angry               - occasional
+  {  2, 3000,  5000 },  // 12. Scared              - rare
+  {  2, 3000,  6000 },  // 13. Awe                 - rare
 };
+static_assert(sizeof(eyeMoods) / sizeof(eyeMoods[0]) == EYE_VARIANT_COUNT, "eyeMoods[] needs one entry per eye variant");
 
 unsigned long eyeShownAtMs = 0;   // when currentEye was selected
 unsigned long eyeHoldMs = 0;      // how long currentEye stays
@@ -39303,7 +39288,7 @@ uint8_t pickRandomEye(uint8_t exclude) {
     r -= eyeMoods[i].weight;
     if (r < 0) return i;
   }
-  return (exclude == EYE_NEUTRAL) ? EYE_HAPPY : EYE_NEUTRAL;  // not reached
+  return (exclude == EYE_NEUTRAL) ? EYE_GLEE : EYE_NEUTRAL;  // not reached
 }
 
 // Select currentEye: restart its animation and draw the first frame now
