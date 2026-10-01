@@ -81,6 +81,22 @@ These are the 13 expressions in the `eyeVariants[]` table in `EyeVariants.h`. Th
 
 A higher weight means the expression is picked more often. The weights add up to 76, so before the no-repeat rule Neutral is picked about 26% of the time, and Scared or Awe about 3%.
 
+## Eye Mode Preview
+
+![Animated preview of the 13 eye variants used by Eye Mode](docs/eye-mode-preview.gif)
+
+*Animated preview of the eye variants used by Eye Mode.*
+
+The preview shows the 13 eye expressions available in Eye Mode, all animating side by side for about 6 seconds. On the device, only one expression is shown at a time:
+
+1. **Enter:** press **both buttons** together.
+2. **Automatic selection:** Eye Mode picks an expression at random using the mood weights above.
+3. **Continuous animation:** the expression animates using the system in `EyeVariants.h` (`eyeAnims[]`, `drawEyeFrame()`), which combines breathing or pulsing, blinking and look direction.
+4. **Switching:** after a random time it switches to a different expression, never the same one twice in a row.
+5. **Exit:** press **both buttons** again to return to the video or image you were on.
+
+The preview was rendered in software with the same shapes and animation values as `EyeVariants.h`. The real 128×64 OLED may differ by a few pixels.
+
 ## Button Behavior
 
 - **Debounce:** each button must read the same for 30 ms before a press or release counts.
@@ -115,6 +131,8 @@ oled-project/
 │                       buttons, Eye Mode mood selection
 ├── EyeVariants.h       13 eye expressions: presets, drawing, animation
 ├── README.md           This file
+├── docs/
+│   └── eye-mode-preview.gif   Animated preview of the eye expressions (used in this README)
 └── esp32-eyes-main/    Original esp32-eyes library (AGPL-3.0), reference only, not compiled
     ├── LICENSE
     ├── README.md
