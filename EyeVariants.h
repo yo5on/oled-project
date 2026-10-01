@@ -1,5 +1,5 @@
 // =====================================================
-// EYE VARIANTS — 21 static expressions for SSD1306 128x64
+// EYE VARIANTS — eye expressions for SSD1306 128x64
 //
 // Ported from the ESP32 Eyes project (esp32-eyes-main/):
 //   - Preset_* values: copied verbatim from EyePresets.h
@@ -52,21 +52,6 @@ static const EyeConfig Preset_Normal = {
 	.Slope_Bottom = 0,
 	.Radius_Top = 8,
 	.Radius_Bottom = 8,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Happy = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 10,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 10,
-	.Radius_Bottom = 0,
 	.Inverse_Radius_Top = 0,
 	.Inverse_Radius_Bottom = 0,
 	.Inverse_Offset_Top = 0,
@@ -178,51 +163,6 @@ static const EyeConfig Preset_Annoyed_Alt = {
 	.Inverse_Offset_Bottom = 0
 };
 
-static const EyeConfig Preset_Surprised = {
-	.OffsetX = -2,
-	.OffsetY = 0,
-	.Height = 45,
-	.Width = 45,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 16,
-	.Radius_Bottom = 16,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Skeptic = {
-	.OffsetX = 0,
-	.OffsetY = 0,
-	.Height = 40,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 10,
-	.Radius_Bottom = 10,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Skeptic_Alt = {
-	.OffsetX = 0,
-	.OffsetY = -6,
-	.Height = 26,
-	.Width = 40,
-	.Slope_Top = 0.3,
-	.Slope_Bottom = 0,
-	.Radius_Top = 1,
-	.Radius_Bottom = 10,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
 static const EyeConfig Preset_Frustrated = {
 	.OffsetX = 3,
 	.OffsetY = -5,
@@ -232,36 +172,6 @@ static const EyeConfig Preset_Frustrated = {
 	.Slope_Bottom = 0,
 	.Radius_Top = 0,
 	.Radius_Bottom = 10,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Unimpressed = {
-	.OffsetX = 3,
-	.OffsetY = 0,
-	.Height = 12,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 1,
-	.Radius_Bottom = 10,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Unimpressed_Alt = {
-	.OffsetX = 3,
-	.OffsetY = -3,
-	.Height = 22,
-	.Width = 40,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 1,
-	.Radius_Bottom = 16,
 	.Inverse_Radius_Top = 0,
 	.Inverse_Radius_Bottom = 0,
 	.Inverse_Offset_Top = 0,
@@ -328,36 +238,6 @@ static const EyeConfig Preset_Suspicious_Alt = {
 	.Inverse_Offset_Bottom = 0
 };
 
-static const EyeConfig Preset_Squint = {
-	.OffsetX = -10,
-	.OffsetY = -3,
-	.Height = 35,
-	.Width = 35,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 8,
-	.Radius_Bottom = 8,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Squint_Alt = {
-	.OffsetX = 5,
-	.OffsetY = 0,
-	.Height = 20,
-	.Width = 20,
-	.Slope_Top = 0,
-	.Slope_Bottom = 0,
-	.Radius_Top = 5,
-	.Radius_Bottom = 5,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
 static const EyeConfig Preset_Angry = {
 	.OffsetX = -3,
 	.OffsetY = 0,
@@ -367,21 +247,6 @@ static const EyeConfig Preset_Angry = {
 	.Slope_Bottom = 0,
 	.Radius_Top = 2,
 	.Radius_Bottom = 12,
-	.Inverse_Radius_Top = 0,
-	.Inverse_Radius_Bottom = 0,
-	.Inverse_Offset_Top = 0,
-	.Inverse_Offset_Bottom = 0
-};
-
-static const EyeConfig Preset_Furious = {
-	.OffsetX = -2,
-	.OffsetY = 0,
-	.Height = 30,
-	.Width = 40,
-	.Slope_Top = 0.4,
-	.Slope_Bottom = 0,
-	.Radius_Top = 2,
-	.Radius_Bottom = 8,
 	.Inverse_Radius_Top = 0,
 	.Inverse_Radius_Bottom = 0,
 	.Inverse_Offset_Top = 0,
@@ -422,25 +287,17 @@ static const EyeConfig Preset_Awe = {
 enum EyeVariantId : uint8_t {
   EYE_NEUTRAL = 0,      //  1. Neutral
   EYE_BLINK_HIGH,       //  2. Blink (high)
-  EYE_HAPPY,            //  3. Happy
-  EYE_GLEE,             //  4. Glee
-  EYE_BLINK_LOW,        //  5. Blink (low)
-  EYE_SAD_DOWN,         //  6. Sad (looking down)
-  EYE_SAD_UP,           //  7. Sad (looking up to user)
-  EYE_WORRIED,          //  8. Worried
-  EYE_FOCUSED,          //  9. Focused/Determined
-  EYE_ANNOYED,          // 10. Annoyed
-  EYE_SURPRISED,        // 11. Surprised
-  EYE_SKEPTIC,          // 12. Skeptic
-  EYE_FRUSTRATED,       // 13. Frustrated/Bored
-  EYE_UNIMPRESSED,      // 14. Unimpressed
-  EYE_SLEEPY,           // 15. Sleepy Eyes
-  EYE_SUSPICIOUS,       // 16. Suspicious
-  EYE_SQUINT,           // 17. Squint
-  EYE_ANGRY,            // 18. Angry
-  EYE_FURIOUS,          // 19. Furious
-  EYE_SCARED,           // 20. Scared
-  EYE_AWE,              // 21. Awe
+  EYE_GLEE,             //  3. Glee
+  EYE_SAD_UP,           //  4. Sad (looking up to user)
+  EYE_WORRIED,          //  5. Worried
+  EYE_FOCUSED,          //  6. Focused/Determined
+  EYE_ANNOYED,          //  7. Annoyed
+  EYE_FRUSTRATED,       //  8. Frustrated/Bored
+  EYE_SLEEPY,           //  9. Sleepy Eyes
+  EYE_SUSPICIOUS,       // 10. Suspicious
+  EYE_ANGRY,            // 11. Angry
+  EYE_SCARED,           // 12. Scared
+  EYE_AWE,              // 13. Awe
   EYE_VARIANT_COUNT
 };
 
@@ -455,29 +312,22 @@ struct EyeVariant {
   bool blink;
 };
 
-static const EyeVariant eyeVariants[EYE_VARIANT_COUNT] = {
+static const EyeVariant eyeVariants[] = {
   { "Neutral",                  &Preset_Normal,      &Preset_Normal,          0, false },
   { "Blink (high)",             &Preset_Normal,      &Preset_Normal,         +1, true  },
-  { "Happy",                    &Preset_Happy,       &Preset_Happy,           0, false },
   { "Glee",                     &Preset_Glee,        &Preset_Glee,            0, false },
-  { "Blink (low)",              &Preset_Normal,      &Preset_Normal,         -1, true  },
-  { "Sad (looking down)",       &Preset_Sad,         &Preset_Sad,            -1, false },
   { "Sad (looking up to user)", &Preset_Sad,         &Preset_Sad,            +1, false },
   { "Worried",                  &Preset_Worried,     &Preset_Worried_Alt,     0, false },
   { "Focused/Determined",       &Preset_Focused,     &Preset_Focused,         0, false },
   { "Annoyed",                  &Preset_Annoyed,     &Preset_Annoyed_Alt,     0, false },
-  { "Surprised",                &Preset_Surprised,   &Preset_Surprised,       0, false },
-  { "Skeptic",                  &Preset_Skeptic,     &Preset_Skeptic_Alt,     0, false },
   { "Frustrated/Bored",         &Preset_Frustrated,  &Preset_Frustrated,      0, false },
-  { "Unimpressed",              &Preset_Unimpressed, &Preset_Unimpressed_Alt, 0, false },
   { "Sleepy Eyes",              &Preset_Sleepy,      &Preset_Sleepy_Alt,      0, false },
   { "Suspicious",               &Preset_Suspicious,  &Preset_Suspicious_Alt,  0, false },
-  { "Squint",                   &Preset_Squint,      &Preset_Squint_Alt,      0, false },
   { "Angry",                    &Preset_Angry,       &Preset_Angry,           0, false },
-  { "Furious",                  &Preset_Furious,     &Preset_Furious,         0, false },
   { "Scared",                   &Preset_Scared,      &Preset_Scared,          0, false },
   { "Awe",                      &Preset_Awe,         &Preset_Awe,             0, false },
 };
+static_assert(sizeof(eyeVariants) / sizeof(eyeVariants[0]) == EYE_VARIANT_COUNT, "eyeVariants[] needs one entry per EyeVariantId");
 
 // ---- Drawing primitives (u8g2 -> Adafruit_GFX) ----
 
@@ -716,7 +566,6 @@ struct EyeAnim {
 
 #define EW_NONE    { 0, 0, 0, 0, 0 }
 #define EW_TRI(T)  { 0, (T) / 2, 0, (T) / 2, 0 }      // SetTriangle(T, 0)
-#define EW_V1      { 200, 200, 200, 200, 0 }          // Eye.cpp Variation1 default
 #define EW_V2      { 0, 200, 200, 200, 200 }          // Eye.cpp Variation2 default
 #define EM_NONE    { 0, 0, 0, 0, EW_NONE }
 #define EYE_LOOK(a)  a, (uint8_t)(sizeof(a) / sizeof(a[0]))
@@ -724,7 +573,6 @@ struct EyeAnim {
 
 static const EyeLookPoint LOOK_SIDE[]      = { {0, 0}, {-6, 0}, {0, 0}, {6, 0} };
 static const EyeLookPoint LOOK_AROUND[]    = { {0, 0}, {-5, 3}, {5, 3}, {5, -3}, {-5, -3} };
-static const EyeLookPoint LOOK_DOWN_SIDE[] = { {0, -10}, {-4, -10}, {0, -10}, {4, -10} };
 static const EyeLookPoint LOOK_SHIFTY[]    = { {-7, 0}, {7, 0} };
 static const EyeLookPoint LOOK_AWAY[]      = { {0, 0}, {6, 1} };
 static const EyeLookPoint LOOK_AWE[]       = { {0, 3} };
@@ -735,55 +583,34 @@ static const EyeAnim eyeAnims[] = {
     3500, 40, 100, 40, EYE_NO_LOOK, 0, 0 },
   // 2. Blink (high): looking up, open -> half -> closed -> half -> open, repeating
   { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 1300, 200, 100, 200, EYE_NO_LOOK, 0, 0 },
-  // 3. Happy: gentle bounce + blink
-  { {0, 2, 0, 0, EW_TRI(600)}, EM_NONE, {0, 2, 0, 0, EW_TRI(600)}, EM_NONE,
-    4000, 40, 100, 40, EYE_NO_LOOK, 0, 0 },
-  // 4. Glee: library Glee variation (OffsetY 5, SetTriangle(300))
+  // 3. Glee: library Glee variation (OffsetY 5, SetTriangle(300))
   { {0, 5, 0, 0, EW_TRI(300)}, EM_NONE, {0, 5, 0, 0, EW_TRI(300)}, EM_NONE,
     0, 0, 0, 0, EYE_NO_LOOK, 0, 0 },
-  // 5. Blink (low): looking down, repeating blink
-  { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 1300, 200, 100, 200, EYE_NO_LOOK, 0, 0 },
-  // 6. Sad (looking down): slow drift along the floor + slow blink
-  { {0, 0, 1, 0, EW_TRI(2000)}, EM_NONE, {0, 0, 1, 0, EW_TRI(2000)}, EM_NONE,
-    5000, 80, 150, 120, EYE_LOOK(LOOK_DOWN_SIDE), 1600, 600 },
-  // 7. Sad (looking up to user): pleading quiver + blink
+  // 4. Sad (looking up to user): pleading quiver + blink
   { {0, 0, 2, 0, EW_TRI(400)}, EM_NONE, {0, 0, 2, 0, EW_TRI(400)}, EM_NONE,
     4500, 60, 120, 80, EYE_NO_LOOK, 0, 0 },
-  // 8. Worried: nervous side glances + quiver + blink
+  // 5. Worried: nervous side glances + quiver + blink
   { {0, 0, 2, 0, EW_TRI(500)}, EM_NONE, {0, 0, 2, 0, EW_TRI(500)}, EM_NONE,
     3000, 40, 100, 40, EYE_LOOK(LOOK_SIDE), 900, 200 },
-  // 9. Focused/Determined: slow narrowing pulse + rare blink
+  // 6. Focused/Determined: slow narrowing pulse + rare blink
   { {0, 0, 2, 0, EW_TRI(1500)}, EM_NONE, {0, 0, 2, 0, EW_TRI(1500)}, EM_NONE,
     6000, 40, 100, 40, EYE_NO_LOOK, 0, 0 },
-  // 10. Annoyed: glance away and back + slow blink
+  // 7. Annoyed: glance away and back + slow blink
   { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 3500, 80, 150, 80, EYE_LOOK(LOOK_AWAY), 1500, 250 },
-  // 11. Surprised: size pulse + blink
-  { {0, 0, 2, 2, EW_TRI(600)}, EM_NONE, {0, 0, 2, 2, EW_TRI(600)}, EM_NONE,
-    5000, 40, 100, 40, EYE_NO_LOOK, 0, 0 },
-  // 12. Skeptic: slow left/right look + blink
-  { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 4000, 40, 100, 40, EYE_LOOK(LOOK_SIDE), 1500, 400 },
-  // 13. Frustrated/Bored: wandering look around + slow blink
+  // 8. Frustrated/Bored: wandering look around + slow blink
   { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 3000, 100, 150, 150, EYE_LOOK(LOOK_AROUND), 1400, 500 },
-  // 14. Unimpressed: look away and hold + slow blink
-  { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 5000, 120, 200, 120, EYE_LOOK(LOOK_AWAY), 2000, 300 },
-  // 15. Sleepy Eyes: drooping lids + slow heavy blink
+  // 9. Sleepy Eyes: drooping lids + slow heavy blink
   { {0, 1, 2, 0, EW_TRI(3000)}, EM_NONE, {0, 1, 2, 0, EW_TRI(3000)}, EM_NONE,
     2500, 300, 400, 300, EYE_NO_LOOK, 0, 0 },
-  // 16. Suspicious: shifty left/right look + blink
+  // 10. Suspicious: shifty left/right look + blink
   { EM_NONE, EM_NONE, EM_NONE, EM_NONE, 5000, 40, 100, 40, EYE_LOOK(LOOK_SHIFTY), 1200, 300 },
-  // 17. Squint: library Squint variations (left eye OffsetX 6 / OffsetY 6) + blink
-  { EM_NONE, EM_NONE, {6, 0, 0, 0, EW_V1}, {0, 6, 0, 0, EW_V2},
-    4000, 40, 100, 40, EYE_NO_LOOK, 0, 0 },
-  // 18. Angry: library Angry variation (OffsetY 2, SetTriangle(300)) + blink
+  // 11. Angry: library Angry variation (OffsetY 2, SetTriangle(300)) + blink
   { {0, 2, 0, 0, EW_TRI(300)}, EM_NONE, {0, 2, 0, 0, EW_TRI(300)}, EM_NONE,
     4000, 40, 100, 40, EYE_NO_LOOK, 0, 0 },
-  // 19. Furious: fast shake, no blink
-  { {2, 1, 0, 0, EW_TRI(150)}, EM_NONE, {2, 1, 0, 0, EW_TRI(150)}, EM_NONE,
-    0, 0, 0, 0, EYE_NO_LOOK, 0, 0 },
-  // 20. Scared: tremble + darting side looks + quick blink
+  // 12. Scared: tremble + darting side looks + quick blink
   { {1, 0, 0, 0, EW_TRI(100)}, EM_NONE, {1, 0, 0, 0, EW_TRI(100)}, EM_NONE,
     3000, 30, 60, 30, EYE_LOOK(LOOK_SIDE), 700, 120 },
-  // 21. Awe: slow wonder pulse, looking slightly up + blink
+  // 13. Awe: slow wonder pulse, looking slightly up + blink
   { {0, 0, 3, 2, EW_TRI(1500)}, EM_NONE, {0, 0, 3, 2, EW_TRI(1500)}, EM_NONE,
     4500, 40, 100, 40, EYE_LOOK(LOOK_AWE), 1000, 0 },
 };
