@@ -10,16 +10,16 @@
 
 ---
 
-<div align="center"><samp>An ESP32-based OLED project with videos, still images, an animated robot face, a mood-driven Eye Mode with button reactions, and two-button control.</samp></div>
+<div align="center"><samp>An ESP32-based OLED project with an animated robot face, a mood-driven Eye Mode with button reactions, two-button control, and empty media slots ready for future videos and images.</samp></div>
 
 ---
 
 <div align="center"><samp><b>Features</b></samp></div>
 
-- <samp><b>Video and image playback</b> — 4 animated videos stored as bitmap frames and 6 still images.</samp>
+- <samp><b>Empty media slots</b> — 5 video slots and 5 image slots, intentionally empty and ready for future content. Empty slots show <code>Slot N: not loaded</code>.</samp>
 - <samp><b>Animated robot face</b> — 11 emotions drawn live with Adafruit GFX (no per-frame bitmaps), each with its own animation.</samp>
 - <samp><b>Eye Mode</b> — emotions are picked automatically with weighted randomness; the same emotion never repeats twice in a row.</samp>
-- <samp><b>Button reactions</b> — in Eye Mode, PREV/NEXT clicks count toward a random 1–5 threshold; six emotions then type a message on a white screen.</samp>
+- <samp><b>Button reactions</b> — in Eye Mode, PREV/NEXT clicks count toward a random 1–5 threshold; Happy and Sad then type a message on a white screen.</samp>
 - <samp><b>Two-button control</b> — PREV and NEXT browse content in Normal Mode; both buttons together switch modes.</samp>
 - <samp><b>Responsive animation</b> — non-blocking <code>millis()</code> timing, no <code>delay()</code>, so the buttons stay responsive.</samp>
 
@@ -46,9 +46,9 @@
 
 <samp><b>Normal Mode</b></samp>
 
-- <samp>Starts with the first video.</samp>
-- <samp>PREV and NEXT browse the 4 videos and 6 images (the eye emotions are not part of this list).</samp>
-- <samp>Videos loop at their configured frame rate; images stay until you navigate.</samp>
+- <samp>Starts on Video slot 1.</samp>
+- <samp>PREV and NEXT browse the 5 video slots and 5 image slots (the eye emotions are not part of this list).</samp>
+- <samp>All 10 media slots are currently empty and show <code>Slot N: not loaded</code>. Once media is added, videos loop at their configured frame rate and images stay until you navigate.</samp>
 
 <samp><b>Eye Mode</b></samp>
 
@@ -59,7 +59,7 @@
 
 <samp><b>Exit</b></samp>
 
-- <samp>Press both buttons together again — also while a reaction is showing — to return to the exact video or image that was displayed before. A video resumes from its previous frame.</samp>
+- <samp>Press both buttons together again — also while a reaction is showing — to return to the exact content slot that was displayed before.</samp>
 
 ---
 
@@ -87,20 +87,34 @@
 
 <samp>In Eye Mode every single PREV or NEXT press adds to one shared click counter. A random threshold of 1–5 clicks (<code>random(1, 6)</code>, ESP32 hardware RNG) is chosen when Eye Mode starts and again after every reaction or reset. When the counter reaches it:</samp>
 
-| <samp>Emotion</samp> | <samp>Reaction text</samp> |
+| <samp>Emotion</samp> | <samp>Reaction text (implemented)</samp> |
 |---|---|
-| <samp>Angry</samp> | <samp><b>Myrr!!!</b></samp> |
 | <samp>Happy</samp> | <samp><b>I lovee youhhh!</b> / <b>Mwahhh mwahh mwahhh</b></samp> |
 | <samp>Sad</samp> | <samp><b>I miss youhh!</b></samp> |
-| <samp>Worried</samp> | <samp><b>Nee venumm</b></samp> |
-| <samp>Bored</samp> | <samp><b>Podaaa!</b></samp> |
-| <samp>Sleepy</samp> | <samp><b>Podaaa!</b></samp> |
 
 - <samp>The eyes stop and the whole screen turns white. No eyes, icons or other graphics are shown.</samp>
 - <samp>The message is typed in bold black text, one character about every 70 ms, held for about 1.6 s, then the <b>same</b> emotion resumes (no new random pick).</samp>
 - <samp>Text is centred and uses the largest size that fits inside a 4 px margin (measured with <code>getTextBounds()</code>, words are never split).</samp>
 - <samp>Presses during a reaction are ignored. Both buttons together still exit Eye Mode immediately.</samp>
-- <samp>For Surprised, Confused, Excited, Scared and Furious, reaching the threshold just resets the counter with a new random threshold — no text.</samp>
+- <samp>For all other emotions, reaching the threshold just resets the counter with a new random threshold — no text.</samp>
+- <samp><b>Removed:</b> the previous reaction messages for Angry, Worried, Bored and Sleepy have been removed from the firmware, together with their reaction logic. These emotions currently show no text.</samp>
+
+---
+
+<div align="center"><samp><b>Planned / Recommended Eye Reactions</b></samp></div>
+
+<samp><b>⚠ RECOMMENDATIONS ONLY — NOT IMPLEMENTED.</b> These short messages are suggestions for future firmware updates. None of them are in <code>v3.ino</code> yet.</samp>
+
+| <samp>Emotion</samp> | <samp>Suggested reaction text</samp> |
+|---|---|
+| <samp>Angry</samp> | <samp><b>Hmph!</b> / <b>Grr! Stop it!</b></samp> |
+| <samp>Happy</samp> | <samp><b>Yay!</b> / <b>Hehe! :)</b></samp> |
+| <samp>Sad</samp> | <samp><b>Hug me?</b> / <b>So lonely...</b></samp> |
+| <samp>Worried</samp> | <samp><b>Uh oh...</b> / <b>Are you okay?</b></samp> |
+| <samp>Bored</samp> | <samp><b>So bored...</b> / <b>Play with me!</b></samp> |
+| <samp>Sleepy</samp> | <samp><b>Zzz...</b> / <b>5 more mins</b></samp> |
+
+<samp>Short messages fit best: the reaction screen picks the largest text size that fits inside a 4 px margin, so one or two short words display at the largest size.</samp>
 
 ---
 
@@ -121,11 +135,7 @@
 
 ![Animated preview of the 11 emotions](docs/eye-mode-preview.gif)
 
-![Eye Mode reaction screens](docs/eye-reactions-preview.png)
-
-![Animated reactions: eyes, typed message, eyes again](docs/eye-reactions-preview.gif)
-
-<div align="center"><samp>Previews are rendered on a PC from the same shapes and integer math as <code>EyeVariants.h</code>. Lit OLED pixels are shown in cyan, so the white reaction background appears cyan. The physical 128×64 OLED may differ by a few pixels.</samp></div>
+<div align="center"><samp>Previews are rendered on a PC from the same shapes and integer math as <code>EyeVariants.h</code>. Lit OLED pixels are shown in cyan. The physical 128×64 OLED may differ by a few pixels.</samp></div>
 
 ---
 
@@ -133,9 +143,9 @@
 
 | <samp>Input</samp> | <samp>Normal Mode</samp> | <samp>Eye Mode</samp> |
 |---|---|---|
-| <samp>PREV</samp> | <samp>Previous video/image</samp> | <samp>Reaction click (never changes the emotion)</samp> |
-| <samp>NEXT</samp> | <samp>Next video/image</samp> | <samp>Reaction click (never changes the emotion)</samp> |
-| <samp>PREV + NEXT</samp> | <samp>Enter Eye Mode</samp> | <samp>Exit to the same video/image</samp> |
+| <samp>PREV</samp> | <samp>Previous media slot</samp> | <samp>Reaction click (never changes the emotion)</samp> |
+| <samp>NEXT</samp> | <samp>Next media slot</samp> | <samp>Reaction click (never changes the emotion)</samp> |
+| <samp>PREV + NEXT</samp> | <samp>Enter Eye Mode</samp> | <samp>Exit to the same media slot</samp> |
 
 <samp><b>Debounce:</b> 30 ms stable input.</samp>
 
@@ -164,19 +174,17 @@
 
 ```text
 oled-project/
-├── v3.ino                         Main sketch: content data, modes, buttons, mood selection, reactions
+├── v3.ino                         Main sketch: empty media slots, modes, buttons, mood selection, reactions
 ├── EyeVariants.h                  11 emotions: curved eye geometry, animations, frame timing
 ├── README.md                      Project documentation
 ├── docs/
 │   ├── eye-emotions-sheet.png     All emotions (actual size and 3x)
-│   ├── eye-mode-preview.gif       Emotions animating
-│   ├── eye-reactions-preview.png  Reaction screens
-│   └── eye-reactions-preview.gif  Reactions animated
+│   └── eye-mode-preview.gif       Emotions animating
 ├── v4/                            Separate, isolated v4 sketch (see v4/README.md)
 └── esp32-eyes-main/               Reference copy of esp32-eyes (not compiled)
 ```
 
-<samp>All video and image bitmap data is stored in <code>v3.ino</code> as <code>PROGMEM</code> arrays.</samp>
+<samp>No video or image bitmap data is included yet. When media is added, it goes in <code>v3.ino</code> as <code>PROGMEM</code> arrays at the marked <code>VIDEO N DATA HERE</code> / <code>IMAGE N DATA HERE</code> placeholders.</samp>
 
 ---
 
@@ -217,19 +225,19 @@ git clone https://github.com/yo5on/oled-project.git v3
 <samp><b>8. Test</b></samp>
 
 - <samp>Open Serial Monitor at <b>115200</b> baud and check for <code>OLED READY</code>.</samp>
-- <samp>Press NEXT and PREV to verify content navigation.</samp>
+- <samp>Press NEXT and PREV to verify content navigation (empty slots show <code>Slot N: not loaded</code>).</samp>
 - <samp>Press both buttons together and check for <code>EYE MODE</code> and <code>Eye Mode: &lt;name&gt;</code>.</samp>
-- <samp>Click PREV/NEXT on Angry, Happy, Sad, Worried, Bored or Sleepy and check for <code>Eye Mode reaction: ...</code>.</samp>
+- <samp>Click PREV/NEXT on Happy or Sad and check for <code>Eye Mode reaction: ...</code>.</samp>
 
 ---
 
 <div align="center"><samp><b>Usage</b></samp></div>
 
-1. <samp>Power on. Normal Mode starts on Video 1.</samp>
-2. <samp>Use PREV/NEXT to cycle through 4 videos and 6 images.</samp>
+1. <samp>Power on. Normal Mode starts on Video slot 1.</samp>
+2. <samp>Use PREV/NEXT to cycle through the 5 video slots and 5 image slots (currently empty).</samp>
 3. <samp>Press both buttons to enter Eye Mode; emotions change automatically.</samp>
-4. <samp>Click PREV/NEXT to poke the face; after a random 1–5 clicks, some emotions type a reaction.</samp>
-5. <samp>Press both buttons again to return to the same video or image.</samp>
+4. <samp>Click PREV/NEXT to poke the face; after a random 1–5 clicks, Happy and Sad type a reaction.</samp>
+5. <samp>Press both buttons again to return to the same media slot.</samp>
 
 ---
 
@@ -237,18 +245,13 @@ git clone https://github.com/yo5on/oled-project.git v3
 
 | <samp>Content</samp> | <samp>Count</samp> | <samp>Defined in</samp> |
 |---|---:|---|
-| <samp>Videos</samp> | <samp>4</samp> | <samp><code>v3.ino</code>, <code>contents[]</code></samp> |
-| <samp>Images</samp> | <samp>6</samp> | <samp><code>v3.ino</code>, <code>contents[]</code></samp> |
+| <samp>Video slots (empty)</samp> | <samp>5</samp> | <samp><code>v3.ino</code>, <code>contents[]</code></samp> |
+| <samp>Image slots (empty)</samp> | <samp>5</samp> | <samp><code>v3.ino</code>, <code>contents[]</code></samp> |
 | <samp>Emotions</samp> | <samp>11</samp> | <samp><code>EyeVariants.h</code>, <code>EyeVariantId</code> / <code>eyeVariants[]</code></samp> |
 
-<samp><b>Normal Mode order:</b> <code>video1 → video4 → video3 → video2 → image1 → image2 → image3 → image4 → image5 → image7</code></samp>
+<samp><b>Normal Mode order:</b> <code>Video 1 → Video 2 → Video 3 → Video 4 → Video 5 → Image 1 → Image 2 → Image 3 → Image 4 → Image 5</code></samp>
 
-| <samp>Video</samp> | <samp>Frame time</samp> | <samp>Approx. FPS</samp> |
-|---|---:|---:|
-| <samp><code>video1</code></samp> | <samp>91 ms</samp> | <samp>~11</samp> |
-| <samp><code>video4</code></samp> | <samp>66 ms</samp> | <samp>~15</samp> |
-| <samp><code>video3</code></samp> | <samp>149 ms</samp> | <samp>~6.7</samp> |
-| <samp><code>video2</code></samp> | <samp>200 ms</samp> | <samp>5</samp> |
+<samp><b>The media slots are intentionally empty</b> and ready for future content. To fill a slot, paste the bitmap data at its <code>DATA HERE</code> placeholder in <code>v3.ino</code>, point the matching <code>contents[]</code> entry at it, and (for videos) set its frame time in <code>videoFrameMs[]</code>. The steps are documented in the comment above the placeholders.</samp>
 
 ---
 
@@ -261,10 +264,11 @@ git clone https://github.com/yo5on/oled-project.git v3
 | <samp>Wrong I2C address</samp> | <samp>The sketch uses <code>0x3C</code>. Some modules use <code>0x3D</code>.</samp> |
 | <samp>Buttons do not respond</samp> | <samp>Connect each button between its GPIO and GND. Buttons use <code>INPUT_PULLUP</code>.</samp> |
 | <samp>Eye Mode will not start</samp> | <samp>Press both buttons within about 80 ms of each other.</samp> |
-| <samp>No reaction text</samp> | <samp>Only Angry, Happy, Sad, Worried, Bored and Sleepy react, and only after the random 1–5 clicks.</samp> |
+| <samp>No reaction text</samp> | <samp>Only Happy and Sad react, and only after the random 1–5 clicks.</samp> |
 | <samp>Upload hangs at Connecting...</samp> | <samp>Hold BOOT while uploading and verify the COM port and USB cable.</samp> |
 | <samp>Compile errors about missing headers</samp> | <samp>Install Adafruit SSD1306 and its dependencies, select an ESP32 board, and keep EyeVariants.h beside v3.ino.</samp> |
-| <samp>Sketch too big</samp> | <samp>The bitmap data uses about 600 KB of flash. Use a larger app partition if you add more content.</samp> |
+| <samp>Slot shows "not loaded"</samp> | <samp>Expected: the media slots are empty until you add video/image data.</samp> |
+| <samp>Sketch too big after adding media</samp> | <samp>Each 128×64 frame uses 1 KB of flash. Use a larger app partition if you add a lot of content.</samp> |
 
 ---
 
@@ -273,7 +277,7 @@ git clone https://github.com/yo5on/oled-project.git v3
 | <samp>Area</samp> | <samp>Implementation</samp> |
 |---|---|
 | <samp>Pins and OLED</samp> | <samp><code>v3.ino</code>: <code>BTN_PREV</code>, <code>BTN_NEXT</code>, <code>SCREEN_ADDR</code>, <code>Wire.begin(22, 21)</code></samp> |
-| <samp>Content</samp> | <samp><code>contents[]</code>, <code>videoFrameMs[]</code>, <code>PROGMEM</code> bitmap arrays</samp> |
+| <samp>Content</samp> | <samp><code>contents[]</code> (5 empty video + 5 empty image slots), <code>videoFrameMs[]</code></samp> |
 | <samp>Normal navigation</samp> | <samp><code>nextContent()</code>, <code>previousContent()</code> (skip <code>EYES</code> slots), <code>playContent()</code></samp> |
 | <samp>Emotions</samp> | <samp><code>EyeVariantId</code>, <code>eyeVariants[]</code>, <code>rfDrawEmotion()</code> in <code>EyeVariants.h</code></samp> |
 | <samp>Eye geometry</samp> | <samp><code>rfEye()</code>, <code>rfLids()</code>, <code>rfArc()</code>, <code>rfStroke()</code>; size via <code>RF_SCALE</code> (140) and <code>RF_EYE_NARROW</code> (72)</samp> |
