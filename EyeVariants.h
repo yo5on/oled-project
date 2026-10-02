@@ -18,10 +18,10 @@
 // deep lids make thin slits. Emotions deform this same geometry;
 // the animations move/close/stretch it.
 //
-// Interface used by v3.ino:
+// Interface used by OLED_Eye_Animation.ino:
 //   EyeVariantId / EYE_VARIANT_COUNT / eyeVariants[].name
 //   eyeAnimRestart(), eyeAnimUpdate(id, force), drawEyeVariant(id)
-// Uses the global `display` from v3.ino (include after it).
+// Uses the global `display` from OLED_Eye_Animation.ino (include after it).
 //
 // Integer-only math, so the docs/ previews are rendered from the
 // same values on a PC.

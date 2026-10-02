@@ -1,5 +1,3 @@
-# OLED Eye Animation Project
-
 <div align="center">
 
 <img src="https://raw.githubusercontent.com/yo5on/yo5on/main/hd-projects.svg" width="620" alt="projects"/>
@@ -13,6 +11,22 @@
 ---
 
 <div align="center"><samp>An ESP32-based OLED project with an animated robot face, mood-driven Eye Mode with button reactions, two-button control, and empty media slots ready for future content.</samp></div>
+
+---
+
+<div align="center"><samp><b>Project Overview</b></samp></div>
+
+<samp>The sketch drives a 128×64 SSD1306 OLED from an ESP32 and has two modes. Normal Mode steps through 5 video slots and 5 image slots, which are intentionally empty for now. Eye Mode shows a robot face that switches automatically between 11 animated emotions.</samp>
+
+<samp>Every emotion is drawn live from one curved eye shape. No per-frame bitmaps are used, and all timing is non-blocking, so the buttons stay responsive while the face animates.</samp>
+
+<samp>The project provides practical experience with:</samp>
+
+- <samp>Embedded systems</samp>
+- <samp>OLED graphics with Adafruit GFX</samp>
+- <samp>Procedural animation</samp>
+- <samp>Button debouncing and input handling</samp>
+- <samp>Non-blocking timing with <code>millis()</code></samp>
 
 ---
 
@@ -56,7 +70,7 @@
 
 - <samp>Press PREV + NEXT together to enter.</samp>
 - <samp>One of 11 emotions is selected immediately using weighted randomness.</samp>
-- <samp>The emotion animates continuously at about 30 FPS.</samp>
+- <samp>The emotion animates continuously at about 30 FPS (one frame every 33 ms).</samp>
 - <samp>After a randomized interval, another emotion is selected.</samp>
 - <samp>The same emotion is never selected twice in a row.</samp>
 - <samp>Single PREV/NEXT presses become reaction clicks instead of changing the emotion.</samp>
@@ -87,6 +101,15 @@
 
 ---
 
+<div align="center"><samp><b>Eye Design</b></samp></div>
+
+- <samp>One curved eye shape (<code>rfEye()</code>): a superellipse between an oval and a rounded rectangle, with slightly flattened top and bottom and never a perfect circle.</samp>
+- <samp>Emotions deform that same shape: stretched, squashed, tilted, or cut by curved upper and lower lids.</samp>
+- <samp>The whole face is drawn at 140% of the base design (<code>RF_SCALE</code>), with eyes kept narrow at 72% width (<code>RF_EYE_NARROW</code>).</samp>
+- <samp>Small extras such as mouths, a tear, "z", "?", sparkles, and an anger mark are drawn with the same integer math.</samp>
+
+---
+
 <div align="center"><samp><b>Reactions</b></samp></div>
 
 <samp>In Eye Mode, every PREV/NEXT press increments a shared click counter. A random threshold from 1–5 clicks is selected when Eye Mode starts and after each reaction or reset.</samp>
@@ -96,8 +119,8 @@
 | <samp>Happy</samp> | <samp><b>I lovee youhhh!</b> / <b>Mwahhh mwahh mwahhh</b></samp> |
 | <samp>Sad</samp> | <samp><b>I miss youhh!</b></samp> |
 
-- <samp>The screen turns white and the message is typed in bold black text.</samp>
-- <samp>The message is held briefly, then the same emotion resumes without a new selection.</samp>
+- <samp>The screen turns white and the message is typed in bold black text, one character about every 70 ms.</samp>
+- <samp>The message is held for about 1.6 s, then the same emotion resumes without a new selection.</samp>
 - <samp>Presses during a reaction are ignored; both buttons still exit Eye Mode.</samp>
 - <samp>Other emotions reset the reaction counter when the threshold is reached but show no text.</samp>
 
@@ -149,18 +172,17 @@
 <div align="center"><samp><b>Project Structure</b></samp></div>
 
 ```text
-oled-project/
-├── v3.ino                         Main sketch: media slots, modes, buttons, reactions
+OLED_Eye_Animation/
+├── OLED_Eye_Animation.ino         Main sketch: media slots, modes, buttons, reactions
 ├── EyeVariants.h                  11 emotions, geometry, drawing and animation
 ├── README.md                      Project documentation
 ├── docs/
 │   ├── eye-emotions-sheet.png     Emotion preview sheet
 │   └── eye-mode-preview.gif       Animated emotion preview
-├── v4/                            Separate v4 sketch
-└── esp32-eyes-main/               Reference copy of esp32-eyes
+└── esp32-eyes-main/               Reference copy of esp32-eyes (not compiled)
 ```
 
-<samp>The 5 video slots and 5 image slots are intentionally empty. Future media data is designed to be inserted into <code>v3.ino</code> at the marked placeholders.</samp>
+<samp>The 5 video slots and 5 image slots are intentionally empty. Future media data is designed to be inserted into <code>OLED_Eye_Animation.ino</code> at the marked placeholders.</samp>
 
 ---
 
@@ -169,14 +191,14 @@ oled-project/
 <samp><b>1. Clone the repository</b></samp>
 
 ```bash
-git clone https://github.com/yo5on/oled-project.git v3
+git clone https://github.com/yo5on/oled-project.git OLED_Eye_Animation
 ```
 
-<samp>Using <code>v3</code> as the folder name keeps the Arduino sketch filename aligned with the folder name.</samp>
+<samp>The Arduino IDE requires the sketch folder name to match the <code>.ino</code> filename. Cloning into <code>OLED_Eye_Animation</code> keeps <code>OLED_Eye_Animation.ino</code> in a matching folder.</samp>
 
 <samp><b>2. Open the sketch</b></samp>
 
-<samp>Open <code>v3/v3.ino</code> in Arduino IDE and keep <code>EyeVariants.h</code> beside it.</samp>
+<samp>Open <code>OLED_Eye_Animation/OLED_Eye_Animation.ino</code> in Arduino IDE and keep <code>EyeVariants.h</code> beside it.</samp>
 
 <samp><b>3. Install ESP32 support</b></samp>
 
@@ -230,11 +252,19 @@ git clone https://github.com/yo5on/oled-project.git v3
 
 ---
 
+<div align="center"><samp><b>OLED Animation Maker</b></samp></div>
+
+<samp>Want to create your own OLED animations? You can use <a href="https://www.oledanimationmaker.com/">OLED Animation Maker</a> to create and customize animations, import visual content, preview them, and generate Arduino-ready animation data/code for OLED projects.</samp>
+
+<samp>This project can be extended with custom animations created using the tool. Generated 128×64 bitmap data can be pasted into the empty video and image slots in <code>OLED_Eye_Animation.ino</code>.</samp>
+
+---
+
 <div align="center"><samp><b>Development Notes</b></samp></div>
 
 | <samp>Area</samp> | <samp>Implementation</samp> |
 |---|---|
-| <samp>Pins and OLED</samp> | <samp><code>v3.ino</code>: <code>BTN_PREV</code>, <code>BTN_NEXT</code>, <code>SCREEN_ADDR</code>, <code>Wire.begin(22, 21)</code></samp> |
+| <samp>Pins and OLED</samp> | <samp><code>OLED_Eye_Animation.ino</code>: <code>BTN_PREV</code>, <code>BTN_NEXT</code>, <code>SCREEN_ADDR</code>, <code>Wire.begin(22, 21)</code></samp> |
 | <samp>Content</samp> | <samp><code>contents[]</code> and <code>videoFrameMs[]</code></samp> |
 | <samp>Navigation</samp> | <samp><code>nextContent()</code>, <code>previousContent()</code>, <code>playContent()</code></samp> |
 | <samp>Emotions</samp> | <samp><code>EyeVariantId</code>, <code>eyeVariants[]</code>, <code>rfDrawEmotion()</code></samp> |
@@ -249,16 +279,20 @@ git clone https://github.com/yo5on/oled-project.git v3
 
 ---
 
-<div align="center"><samp><b>License</b></samp></div>
-
-<samp>The current robot-face graphics and animations in <code>EyeVariants.h</code> are original to this project. The style was inspired by the referenced OLED Animation Maker design. An earlier implementation was derived from <a href="https://github.com/playfultechnology/esp32-eyes">esp32-eyes</a> by Alastair Aitchison (Playful Technology) and Luis Llamas under AGPL-3.0; that reference source remains in <code>esp32-eyes-main/</code> with its license.</samp>
-
----
+<div align="center"><samp><b>Author</b></samp></div>
 
 <div align="center">
-
 <samp><strong>Yoson</strong></samp>
 
 <samp>Embedded systems, robotics, and hardware projects.</samp>
 
+<samp>GitHub: https://github.com/yo5on</samp>
 </div>
+
+---
+
+<div align="center"><samp><b>License</b></samp></div>
+
+<samp>The current robot-face graphics and animations in <code>EyeVariants.h</code> are original to this project. The style was inspired by a design made with <a href="https://www.oledanimationmaker.com/?s=DBdtgyEY6vSbQFSxpzuu">OLED Animation Maker</a>. An earlier implementation was derived from <a href="https://github.com/playfultechnology/esp32-eyes">esp32-eyes</a> by Alastair Aitchison (Playful Technology) and Luis Llamas under AGPL-3.0; that reference source remains in <code>esp32-eyes-main/</code> with its license.</samp>
+
+<div align="center"><samp>If you find this project useful, consider giving the repository a star.</samp></div>
