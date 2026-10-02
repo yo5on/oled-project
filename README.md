@@ -8,7 +8,6 @@ An ESP32 and SSD1306 OLED project with a mood-driven animated robot face, two-bu
 - A rounded, curved superellipse eye shape with narrowed eyes and a larger face.
 - Non-blocking animation and button handling.
 - PREV and NEXT navigate Normal Mode content slots. Press both buttons together to enter or exit Eye Mode.
-- In Eye Mode, single PREV/NEXT presses count toward a random threshold of 1–5 clicks. The existing reaction state machine currently types messages for Happy and Sad; other emotions reset the click counter at the threshold without showing a message.
 - Five empty video slots and five empty image slots. Media is intentionally absent so it can be added later.
 
 ## Eye Mode and Emotions
@@ -33,34 +32,17 @@ The current emotions and animations are:
 
 The face retains the current larger layout and narrow, rounded/cylindrical eye proportions. The same curved eye geometry is deformed for each expression. The face is drawn live; emotion animation does not rely on per-frame bitmaps.
 
-## Buttons and Reactions
+## Buttons
 
 | Input | Normal Mode | Eye Mode |
 |---|---|---|
-| PREV | Previous content slot | Adds one click toward the random reaction threshold |
-| NEXT | Next content slot | Adds one click toward the random reaction threshold |
+| PREV | Previous content slot | Does not change the emotion |
+| NEXT | Next content slot | Does not change the emotion |
 | PREV + NEXT | Enter Eye Mode | Exit Eye Mode and resume the previous content slot |
-
-The threshold is selected randomly from 1 through 5 using `random(1, 6)` when Eye Mode starts and after each threshold cycle. Presses during a reaction are ignored, while both-button exit remains available.
-
-Happy and Sad retain their current firmware reaction messages. Reaction screens use bold black text on a white screen, type one character about every 70 ms, remain for about 1.6 seconds, and resume the same emotion.
 
 ## Empty Future Media Slots
 
 The Normal Mode content list contains exactly five video placeholders and five image placeholders. No video frames or image bitmaps are included in this version; the media is intentionally left empty for future addition. Empty slots display a simple “not loaded” screen.
-
-## Recommended Future Eye Reactions
-
-**FUTURE / RECOMMENDED ONLY — documentation suggestions; none of these messages are implemented in firmware.**
-
-| Emotion | Suggested messages |
-|---|---|
-| Angry | “Grr, I need a moment.” / “Please be gentle!” |
-| Happy | “You made me smile!” / “I’m so glad you’re here!” |
-| Sad | “Could I have a little comfort?” / “I miss you.” |
-| Worried | “Is everything going to be okay?” / “I feel a little nervous.” |
-| Bored | “Let’s do something fun!” / “Can we play?” |
-| Sleepy | “Five more minutes…” / “Time for a little nap.” |
 
 ## Eye Design Reference
 
@@ -92,7 +74,7 @@ Open `v3.ino` with `EyeVariants.h` in the same sketch folder. The `esp32-eyes-ma
 
 ## Project Files
 
-- `v3.ino` — OLED setup, empty media slots, content navigation, buttons, Eye Mode, and reaction state machine
+- `v3.ino` — OLED setup, empty media slots, content navigation, buttons, and Eye Mode
 - `EyeVariants.h` — eye shape, 11 emotions, and animation timing
 - `docs/eye-emotions-sheet.png` and `docs/eye-mode-preview.gif` — eye emotion previews
 - `esp32-eyes-main/` — retained reference library
