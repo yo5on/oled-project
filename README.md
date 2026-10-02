@@ -107,6 +107,7 @@
 - <samp>Emotions deform that same shape: stretched, squashed, tilted, or cut by curved upper and lower lids.</samp>
 - <samp>The whole face is drawn at 140% of the base design (<code>RF_SCALE</code>), with eyes kept narrow at 72% width (<code>RF_EYE_NARROW</code>).</samp>
 - <samp>Small extras such as mouths, a tear, "z", "?", sparkles, and an anger mark are drawn with the same integer math.</samp>
+- <samp>Design reference: the eye style was inspired by this <a href="https://www.oledanimationmaker.com/?s=DBdtgyEY6vSbQFSxpzuu">OLED Animation Maker design</a>; the implementation in <code>EyeVariants.h</code> is original.</samp>
 
 ---
 
@@ -257,6 +258,8 @@ git clone https://github.com/yo5on/oled-project.git OLED_Eye_Animation
 <samp>Want to create your own OLED animations? You can use <a href="https://www.oledanimationmaker.com/">OLED Animation Maker</a> to create and customize animations, import visual content, preview them, and generate Arduino-ready animation data/code for OLED projects.</samp>
 
 <samp>This project can be extended with custom animations created using the tool. Generated 128×64 bitmap data can be pasted into the empty video and image slots in <code>OLED_Eye_Animation.ino</code>.</samp>
+
+<div align="center"><samp>🔗 <a href="https://www.oledanimationmaker.com/">https://www.oledanimationmaker.com/</a></samp></div>
 
 ---
 
