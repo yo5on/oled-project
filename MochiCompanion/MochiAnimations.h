@@ -90,8 +90,3 @@ static const MochiAnim MOCHI_ANIMS[ANIM_COUNT] = {
   { "RELAXED",     anim_relaxed,     0, ANIM_RELAXED_FRAMES,     ANIM_RELAXED_FPS,     true, false },
   { "SLEEPY_3",    anim_sleepy_3,    0, ANIM_SLEEPY_3_FRAMES,    ANIM_SLEEPY_3_FPS,    true, false },
 };
-
-// Sleeping face: a still frame of an existing animation (no new artwork).
-// The awake resting faces depend on the mood (POSES in MochiBehavior.h).
-static const AnimId POSE_SLEEP_ANIM = ANIM_RELAXED;   // calm closed eyes "- -"
-static const uint16_t POSE_SLEEP_FRAME = 32;

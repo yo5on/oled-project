@@ -41,23 +41,20 @@
 
 Adafruit_SSD1306 display(SCREEN_W, SCREEN_H, &Wire, -1);
 
-// MochiScreen for the SSD1306
+// MochiScreen for the SSD1306. The panel's own invert mode stays OFF: an inverted
+// frame is flipped in software while it is drawn, so every update is one complete,
+// final image (switching the panel's invert flashed the old image for one transfer).
 class OledScreen : public MochiScreen {
 public:
   void showFrame(const uint8_t* frame, bool inverted) override {
-    if (inverted != inverted_) {
-      display.invertDisplay(inverted);
-      inverted_ = inverted;
-    }
-    display.clearDisplay();
-    display.drawBitmap(0, 0, frame, SCREEN_W, SCREEN_H, SSD1306_WHITE);
+    if (inverted) display.drawBitmap(0, 0, frame, SCREEN_W, SCREEN_H, SSD1306_BLACK, SSD1306_WHITE);
+    else display.drawBitmap(0, 0, frame, SCREEN_W, SCREEN_H, SSD1306_WHITE, SSD1306_BLACK);
     display.display();
   }
-  void setDim(bool dim) override { display.dim(dim); }
-  void setPower(bool on) override { display.ssd1306_command(on ? SSD1306_DISPLAYON : SSD1306_DISPLAYOFF); }
-
-private:
-  bool inverted_ = false;
+  void setContrast(uint8_t level) override {
+    display.ssd1306_command(SSD1306_SETCONTRAST);
+    display.ssd1306_command(level);
+  }
 };
 
 struct Button {
@@ -113,6 +110,7 @@ void setup() {
     Serial.println("SSD1306 not found");
     while (true) delay(1000);
   }
+  display.invertDisplay(false);              // never changed afterwards
   Serial.println();
   Serial.println(MOCHI_HW_TEST ? "BOOT (MOCHI COMPANION - HARDWARE TEST MODE)" : "BOOT (MOCHI COMPANION)");
 
