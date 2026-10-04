@@ -27,6 +27,13 @@ public:
 
 // One full OLED frame takes ~32 ms (render + I2C): morph steps are never planned closer
 static const uint16_t MORPH_MIN_STEP_MS = 34;
+// A full morph gets enough in-between frames that no step changes more than about
+// MORPH_STEP_PX pixels (big face changes move gradually, small ones stay quick): up to
+// MORPH_MAX_STEPS, each at least MORPH_PACED_STEP_MS apart (an in-between's real cost on the
+// ESP32: render + OLED write), so none of them is skipped
+static const uint16_t MORPH_STEP_PX = 350;
+static const uint8_t  MORPH_MAX_STEPS = 7;
+static const uint16_t MORPH_PACED_STEP_MS = 40;
 
 // Eyelid blink: half shut, shut, half open, open (the image from before the blink)
 struct BlinkStep { uint16_t open, ms; };
@@ -70,6 +77,8 @@ public:
   // Morph from what is on screen now to frame `frame` of `id` over `ms`: up to `steps`
   // in-between frames (see morphSteps), step k due at now + k * ms / (steps + 1); the
   // morph ends at now + ms (the destination itself is shown by the next play()/hold()).
+  // A full morph between very different faces gets more steps (and the time they need):
+  // see MORPH_STEP_PX.
   // depth < 256: only part of the way (a breath): steps k = 1..steps show the morph at
   // depth * k / steps, the last one at now + ms, and that partial image stays on screen.
   void morphTo(AnimId id, uint16_t frame, uint8_t steps, uint16_t ms, uint32_t now, uint16_t depth = 256) {
@@ -77,11 +86,7 @@ public:
     if (frame >= a.frameCount) frame = a.frameCount - 1;
     const uint8_t* src = this->frame(a, frame);
     for (uint16_t i = 0; i < 1024; i++) target_[i] = a.inverted ? (uint8_t)~pgm_read_byte(src + i) : pgm_read_byte(src + i);
-    if (cleaned(id)) {                       // a cleaned animation: morph to its cleaned frame
-      if ((lineMask_ >> id) & 1) fillScanlines(target_);
-      despeckle(target_, morphBuf_);
-      memcpy(target_, morphBuf_, 1024);
-    }
+    if (!closedFrame(id, frame, target_) && processed(id)) process(id, target_, morphBuf_);   // morph to the frame as it is shown
     morph_.begin(shown_, target_);
     blinking_ = false;
     morphing_ = true;
@@ -89,6 +94,17 @@ public:
     mStep_ = 0;
     mSteps_ = morphSteps(steps ? steps : 1, ms);
     mMs_ = ms;
+    if (depth >= 256) {                      // paced by how much the face changes
+      uint16_t change = 0;
+      for (uint16_t i = 0; i < 1024; i++) change += popcount8((uint8_t)(shown_[i] ^ target_[i]));
+      uint16_t need = change / MORPH_STEP_PX;  // in-between frames for steps of <= MORPH_STEP_PX
+      if (need > MORPH_MAX_STEPS) need = MORPH_MAX_STEPS;
+      if (need > mSteps_) {
+        mSteps_ = (uint8_t)need;
+        uint16_t paced = (uint16_t)((need + 1) * MORPH_PACED_STEP_MS);
+        if (paced > mMs_) mMs_ = paced;
+      }
+    }
     mStart_ = now;
     mDepth_ = depth < 256 ? depth : 256;
   }
@@ -120,7 +136,7 @@ public:
       if (k <= mStep_) return;
       if (k <= mSteps_) {
         mStep_ = (uint8_t)k;
-        uint16_t t = partial ? (uint16_t)((uint32_t)mDepth_ * mStep_ / mSteps_) : (uint16_t)(256UL * mStep_ / (mSteps_ + 1));
+        uint16_t t = partial ? (uint16_t)((uint32_t)mDepth_ * mStep_ / mSteps_) : evenStep(mStep_, mSteps_);
         morph_.render(t, morphBuf_);
         screen_.showFrame(morphBuf_, false);
         memcpy(shown_, morphBuf_, 1024);
@@ -170,14 +186,28 @@ public:
     if (on) setCleanup(id, true);
   }
 
+
+  // Show frame `frame` of `id` as the eyes of frame `from` (same animation) closed to
+  // `open` (MochiMorph::blinkFrame, 0 = shut .. 256 = as drawn): for a broken closed-eye
+  // frame of the source video. The stored frame is not changed. Up to 4.
+  void setClosedFrame(AnimId id, uint8_t frame, uint8_t from, uint16_t open) {
+    if (nFixes_ < 4) fixes_[nFixes_++] = { id, frame, from, open };
+  }
+
 private:
   void showCurrent() {
     const MochiAnim& a = MOCHI_ANIMS[anim_];
+    if (closedFrame(anim_, frameIdx_, shown_)) {   // a replaced closed-eye frame
+      screen_.showFrame(shown_, false);
+      morphing_ = false;
+      blinking_ = false;
+      return;
+    }
     const uint8_t* f = frame(a, frameIdx_);
-    if (cleaned(anim_)) {                    // displayed pixels, cleaned, shown as they are
+    if (processed(anim_)) {                  // displayed pixels, repaired, shown as they are
       for (uint16_t i = 0; i < 1024; i++) cleanBuf_[i] = a.inverted ? (uint8_t)~pgm_read_byte(f + i) : pgm_read_byte(f + i);
-      if ((lineMask_ >> anim_) & 1) fillScanlines(cleanBuf_);
-      despeckle(cleanBuf_, shown_);
+      process(anim_, cleanBuf_, shown_);
+      memcpy(shown_, cleanBuf_, 1024);
       screen_.showFrame(shown_, false);
     } else {
       screen_.showFrame(f, a.inverted);
@@ -188,6 +218,44 @@ private:
   }
 
   bool cleaned(AnimId id) const { return (cleanMask_ >> id) & 1; }
+
+  static uint8_t popcount8(uint8_t v) { uint8_t n = 0; while (v) { n += v & 1; v >>= 1; } return n; }
+
+  // MochiMorph eases every full morph (smoothstep): on its own, the first and the last
+  // in-between frame hardly differ from the start / end image (the face seems to wait,
+  // then jump). Step k of n is placed so the face is half-way between an even and an eased
+  // progress: still soft at both ends, but every in-between frame moves the face.
+  static uint16_t evenStep(uint8_t k, uint8_t n) {
+    uint32_t lin = 256UL * k / (n + 1);
+    uint32_t want = (lin + easedT((uint16_t)lin)) / 2;          // the progress to show
+    uint16_t lo = 0, hi = 256;                                  // t with easedT(t) = want
+    while (lo < hi) { uint16_t mid = (lo + hi) / 2; if (easedT(mid) < want) lo = mid + 1; else hi = mid; }
+    return lo;
+  }
+  static uint16_t easedT(uint16_t t) { uint32_t x = t; return (uint16_t)((x * x * (768 - 2 * x)) >> 16); }   // = MochiMorph's smoothstep
+
+  // Frame idx of id as replaced by setClosedFrame (displayed pixels into out); false: not
+  // replaced (or the source frame has no eyes to close)
+  bool closedFrame(AnimId id, uint16_t idx, uint8_t* out) {
+    for (uint8_t k = 0; k < nFixes_; k++) {
+      const ClosedFix& c = fixes_[k];
+      if (c.anim != id || c.frame != idx) continue;
+      const MochiAnim& a = MOCHI_ANIMS[id];
+      const uint8_t* f = frame(a, c.from);
+      for (uint16_t i = 0; i < 1024; i++) cleanBuf_[i] = a.inverted ? (uint8_t)~pgm_read_byte(f + i) : pgm_read_byte(f + i);
+      if (processed(id)) process(id, cleanBuf_, out);
+      return morph_.blinkFrame(cleanBuf_, c.open, out);
+    }
+    return false;
+  }
+
+  bool processed(AnimId id) const { return ((cleanMask_ | lineMask_) >> id) & 1; }
+
+  // The display repairs of one animation, in place on displayed pixels (tmp: scratch)
+  void process(AnimId id, uint8_t* io, uint8_t* tmp) const {
+    if ((lineMask_ >> id) & 1) fillScanlines(io);
+    if ((cleanMask_ >> id) & 1) { despeckle(io, tmp); memcpy(io, tmp, 1024); }
+  }
 
   static bool px(const uint8_t* b, int16_t x, int16_t y) {
     return x >= 0 && y >= 0 && x < 128 && y < 64 && (b[y * 16 + (x >> 3)] & (0x80 >> (x & 7)));
@@ -284,6 +352,9 @@ private:
   uint8_t cleanBuf_[1024];                   // a frame of a cleaned animation before cleanup
   uint64_t cleanMask_ = 0;                   // animations shown with edge cleanup (bit = AnimId)
   uint64_t lineMask_ = 0;                    // ... and with scanline repair first
+  struct ClosedFix { AnimId anim; uint8_t frame, from; uint16_t open; };
+  ClosedFix fixes_[4];                       // replaced closed-eye frames (setClosedFrame)
+  uint8_t nFixes_ = 0;
   MochiMorph morph_;
   bool morphing_ = false, blinking_ = false;
   uint8_t bStep_ = 0;

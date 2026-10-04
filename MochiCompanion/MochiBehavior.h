@@ -230,7 +230,7 @@ static const Rung ANNOYANCE_LADDER[] = {        // button 2 when not playing: by
   { { E_ANGRY3, E_ANNOYED }, 2 },               //   < 850
   { { E_FURIOUS, E_ANGRY3, E_SQUEEZE, E_EVIL }, 4 } };  //   >= 850 (FURIOUS / EVIL only when their condition holds)
 static const Rung TEASE_PLAY = { { E_XD, E_CHEEKY, E_UWU, E_EVILGRIN, E_EVIL }, 5 };
-static const Rung CURIOUS_POKE = { { E_SURPRISED, E_WINCE, E_SWEAT, E_BUG }, 4 };
+static const Rung CURIOUS_POKE = { { E_SURPRISED, E_WINCE, E_BUG }, 3 };
 static const Rung GRUDGE = { { E_DEADPAN, E_SQUINT, E_WORRIED }, 3 };
 static const Rung RECOVERY = { { E_SHY, E_TEARY, E_SURPRISED }, 3 };
 static const Rung SLEEPY_PET = { { E_BLINK, E_SQUINT, E_SMILE }, 3 };
@@ -265,6 +265,7 @@ public:
     player_.screen().setContrast(CONTRAST_AWAKE);
     for (uint8_t i = 0; i < sizeof(CLEANED_ANIMS) / sizeof(CLEANED_ANIMS[0]); i++) player_.setCleanup(CLEANED_ANIMS[i], true);
     for (uint8_t i = 0; i < sizeof(SCANLINE_ANIMS) / sizeof(SCANLINE_ANIMS[0]); i++) player_.setScanlineFill(SCANLINE_ANIMS[i], true);
+    for (const ClosedFrameFix& c : CLOSED_FRAME_FIXES) player_.setClosedFrame(c.anim, c.frame, c.from, c.open);
 
     Personality& p = emo_.p;
     p.happy = (int16_t)(100 + rand_(250));
