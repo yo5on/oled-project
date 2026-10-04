@@ -1,5 +1,5 @@
 // =====================================================
-// MOCHI ANIMATIONS — the 35 existing Mochi animations
+// MOCHI ANIMATIONS — the 34 Mochi animations in use
 //
 // Same data and frame ranges as the ESP32_Mochi player:
 //  - 20 clips of 250frames.gif: raw 1024-byte frames inside the one
@@ -32,7 +32,7 @@
 enum AnimId : uint8_t {
   ANIM_SMILE, ANIM_ANNOYED, ANIM_FURIOUS, ANIM_EVIL, ANIM_MOCHI_10, ANIM_MOCHI_11,
   ANIM_BUG, ANIM_SCREAM, ANIM_EVIL_GRIN, ANIM_ANGRY_3, ANIM_SQUINT, ANIM_BLINK,
-  ANIM_MOCHI_26, ANIM_HAPPY_3, ANIM_MOCHI_29, ANIM_SURPRISED,
+  ANIM_HAPPY_3, ANIM_MOCHI_29, ANIM_SURPRISED,
   ANIM_UWU, ANIM_CRYING, ANIM_HAPPY, ANIM_HAPPY_2, ANIM_ANGRY, ANIM_ANGRY_2,
   ANIM_DIZZY, ANIM_KISS, ANIM_CONFUSED_2, ANIM_DETERMINED, ANIM_CONTENT,
   ANIM_EMBARRASSED, ANIM_EXCITED_2, ANIM_FRUSTRATED, ANIM_LAUGH, ANIM_LOVE,
@@ -66,7 +66,6 @@ static const MochiAnim MOCHI_ANIMS[ANIM_COUNT] = {
   { "ANGRY_3",     INTRO,  82,  7, 15, false, true },   // #20  GIF frames 145-151
   { "SQUINT",      INTRO,  96,  7, 15, false, true },   // #24  GIF frames 174-180
   { "BLINK",       INTRO, 103,  7, 15, false, true },   // #25  GIF frames 181-187
-  { "MOCHI_26",    INTRO, 110,  8, 15, false, true },   // #26  GIF frames 188-195
   { "HAPPY_3",     INTRO, 125,  7, 15, false, true },   // #28  GIF frames 203-209
   { "MOCHI_29",    INTRO, 132,  8, 15, false, true },   // #29  GIF frames 210-217
   { "SURPRISED",   INTRO, 140,  7, 15, false, true },   // #30  GIF frames 218-224

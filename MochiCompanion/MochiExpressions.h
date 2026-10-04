@@ -1,5 +1,5 @@
 // =====================================================
-// MOCHI EXPRESSIONS — what each of the 35 animations means
+// MOCHI EXPRESSIONS — what each of the 34 animations means
 //
 // An expression is an animation, or the part of a long clip that carries one
 // expression (many long clips hold several expressions and long calm stretches).
@@ -48,20 +48,25 @@ enum RareKind : uint8_t {
 // lone pixels and one-pixel holes along their strokes (noise pixels per frame, shown
 // range: WORRIED 10.2 -> 1.2, FURIOUS 14.0 -> 2.6, ANNOYED 12.1 -> 1.7, EVIL 14.0 -> 2.5,
 // ANGRY_2 6.8 -> 0.5, LAUGH (hearts) 10.2 -> 0.2; motion and thin marks unchanged).
-// Not cleaned: CRYING, MOCHI_26, SCREAM (it would eat small real details), EVIL_GRIN
+// Not cleaned: CRYING, SCREAM (it would eat small real details), EVIL_GRIN
 // (its stripes are the artwork), SQUINT and the rest (already clean).
 static const AnimId CLEANED_ANIMS[] = { ANIM_MOCHI_29, ANIM_FURIOUS, ANIM_ANNOYED, ANIM_EVIL, ANIM_ANGRY_2, ANIM_LAUGH };
 // Animations whose source video was interlaced: 1-pixel dark rows run through their solid
 // shapes (EVIL_GRIN: up to 330 pixels per frame, visible as broken horizontal lines on the
 // OLED). They are closed before the edge cleanup (MochiPlayer::setScanlineFill).
 static const AnimId SCANLINE_ANIMS[] = { ANIM_EVIL_GRIN };
+// Broken closed-eye frames of the source video, shown as the eyes of a neighbouring frame
+// closed by the eyelid blink (MochiPlayer::setClosedFrame): BLINK f3 (loose shards of the
+// eyes above the lids) -> f2's eyes, lids nearly shut.
+struct ClosedFrameFix { AnimId anim; uint8_t frame, from; uint16_t open; };
+static const ClosedFrameFix CLOSED_FRAME_FIXES[] = { { ANIM_BLINK, 3, 2, 40 } };
 
 enum ExprId : uint8_t {
   E_CALM, E_BLINK, E_GLANCE, E_LOOKAROUND, E_BORED, E_DROOP, E_YAWN,
   E_SMILE, E_HAPPY3, E_BEAM, E_GRIN, E_SMUG,
   E_UWU, E_KISS, E_HEARTS, E_SHY,
   E_CHEEKY, E_XD, E_EVILGRIN, E_EVIL,
-  E_PEEK, E_SWEAT, E_WINCE, E_BUG,
+  E_PEEK, E_WINCE, E_BUG,
   E_SURPRISED, E_SHOCK, E_CHATTER, E_SCREAM, E_DIZZY,
   E_DEADPAN, E_WORRIED, E_SQUINT, E_ANNOYED, E_SQUEEZE, E_ANGRY3, E_FURIOUS,
   E_GLOOM, E_LOOKAWAY, E_TEARY, E_SOB, E_CRYING,
@@ -115,7 +120,6 @@ static const Expression EXPRESSIONS[E_COUNT] = {
   { "EVIL",       ANIM_EVIL,        0, 3,  T_MISCHIEF | T_ANGRY,        3, R_SPITE, 10 },   // f4-5: dissolve into a different clip of the montage
   // curious
   { "PEEK",       ANIM_MOCHI_11,    0, LAST, T_CURIOUS,                     2, R_NONE, 10 },
-  { "SWEAT",      ANIM_MOCHI_26,    0, 6,  T_CURIOUS | T_SAD,             1, R_NONE, 6 },    // f7: cut-out frame into the next clip (KISS)
   { "WINCE",      ANIM_CONFUSED_2,  0, 38, T_CURIOUS | T_OVERSTIM,        2, R_NONE, 10 },
   { "GLITCH",     ANIM_BUG,         0, LAST, T_CURIOUS,                     3, R_GLITCH, 10 },
   // surprise / excitement
@@ -133,9 +137,9 @@ static const Expression EXPRESSIONS[E_COUNT] = {
   { "ANGRY_3",    ANIM_ANGRY_3,     0, 5,  T_ANNOYED | T_ANGRY,           3, R_NONE, 10 },   // f6: dissolve frame of the source video
   { "FURIOUS",    ANIM_FURIOUS,     0, LAST, T_ANGRY,                       3, R_FURIOUS, 10 },
   // sad
-  { "GLOOM",      ANIM_EXCITED_2,  17, 44, T_SAD,                         1, R_NONE, 10 },   // f45-74: 2 s with almost no change (looked stuck)
+  { "GLOOM",      ANIM_EXCITED_2,  17, LAST, T_SAD,                       1, R_NONE, 10 },   // the whole sad drift: the eye keeps moving to f74
   { "LOOKAWAY",   ANIM_DETERMINED, 27, 42, T_SAD,                         1, R_NONE, 10 },   // f43-44: full white block (a flash)
   { "TEARY",      ANIM_ANGRY_2,    19, 29, T_SAD,                         2, R_NONE, 10 },   // later frames: camera glow halo in the source
-  { "SOB",        ANIM_SLEEPY_3,    4, 51, T_SAD,                         3, R_NONE, 10 },   // f3: closing-eyes in-between; f52: cross-fade smear
+  { "SOB",        ANIM_SLEEPY_3,    4, 41, T_SAD,                         3, R_NONE, 10 },   // f3: closing-eyes in-between; f42+: the eyes melt into a wailing ring that breaks apart in a morph
   { "CRYING",     ANIM_CRYING,      0, LAST, T_SAD,                         3, R_CRYING, 10 },
 };
