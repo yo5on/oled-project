@@ -356,6 +356,17 @@ public:
     }
   }
 
+  // Back on screen after something else had it (Gallery Mode; update() was not called
+  // meanwhile): Mochi's last image is shown again and everything carries on from where it
+  // was (mood, feelings, sequence, sleep). The time away was spent with the user, so it
+  // does not count as being alone (no falling asleep at once, no "long time no see").
+  void resume(uint32_t now) {
+    now_ = now;
+    lastInteraction_ = now;
+    player_.redraw();
+    log("RESUME", "back from another screen");
+  }
+
   // A button press (0 = button 1: affection / pet, 1 = button 2: poke / tease)
   void onButton(uint8_t button, uint32_t now) {
     now_ = now;

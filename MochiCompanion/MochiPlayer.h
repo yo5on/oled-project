@@ -151,6 +151,10 @@ public:
 
   MochiScreen& screen() { return screen_; }
 
+  // Show again exactly what the player last put on screen (after something else used
+  // the screen, e.g. Gallery Mode); nothing about playback changes
+  void redraw() { screen_.showFrame(shown_, false); }
+
   // Edge cleanup for one animation (off by default): when its frames are shown (playing,
   // still, or as a morph's start/end), lone pixels are dropped and one-pixel holes filled.
   // Only for animations whose stored 1-bit frames have noisy edges; the data is untouched.

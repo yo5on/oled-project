@@ -7,11 +7,17 @@
 //   BUTTON 1 : friendly (wakes Mochi, makes it happy / playful)
 //   BUTTON 2 : poke (wakes Mochi, surprises it; makes it curious / playful)
 //   many presses quickly : annoyed, sometimes dizzy
+//   BOTH BUTTONS TOGETHER : Gallery Mode (the V3 photos / videos); together again: back
+//     in Gallery Mode: BUTTON 1 = previous item, BUTTON 2 = next item (as in V3)
 // Serial (115200) logs moods, choices and button reactions.
+//
+// Gallery media: gallery_media_private.h, made locally by tools/make_gallery.py from the
+// V3 sketch (never committed). Its ~600 KB need Tools > Partition Scheme > "Huge APP".
+// Without that file the gallery shows one placeholder picture.
 // =====================================================
 
 // 1 = HARDWARE TEST MODE: fast timings (moods 10-15 s, emotions 3-5 s,
-//     sleep after 2 min), verbose Serial log, Serial '1'/'2' act as buttons.
+//     sleep after 2 min), verbose Serial log, Serial '1'/'2' act as buttons, '3' as both.
 // 0 = normal companion (production)
 #define MOCHI_HW_TEST 0
 
@@ -27,6 +33,12 @@
 #include "MochiAnimations.h"
 #include "MochiPlayer.h"
 #include "MochiBehavior.h"
+#include "MochiButtons.h"
+#include "MochiGallery.h"
+
+#if defined(MOCHI_GALLERY_PRIVATE) && defined(ARDUINO_PARTITION_default)
+#error "The private gallery media do not fit the default partition: Tools > Partition Scheme > Huge APP (3MB No OTA/1MB SPIFFS)"
+#endif
 
 // ---- Buttons (to GND, INPUT_PULLUP) ----
 #define BTN_1      25
@@ -57,19 +69,10 @@ public:
   }
 };
 
-struct Button {
-  uint8_t pin;
-  bool stable;               // debounced level (true = pressed)
-  bool lastRaw;
-  unsigned long changedAt;
-};
-
 OledScreen screen;
 MochiPlayer player(screen);
-
-Button btn1 = { BTN_1, false, false, 0 };
-Button btn2 = { BTN_2, false, false, 0 };
-const unsigned long DEBOUNCE_MS = 30;
+MochiGallery gallery(screen);                // separate from Mochi; owns the screen while active
+MochiButtons buttons;                        // single presses and both-together (MochiButtons.h)
 
 uint32_t mochiRandom(uint32_t n) {
   return n ? (uint32_t)random((long)n) : 0;   // ESP32 hardware RNG (esp_random)
@@ -85,19 +88,29 @@ void mochiLog(const char* event, const char* detail) {
 
 MochiBehavior mochi(player, mochiRandom, mochiLog);
 
-// True once per press (debounced; holding a button counts once)
-bool pressed(Button &b) {
-  bool raw = (digitalRead(b.pin) == LOW);
-  unsigned long now = millis();
-  if (raw != b.lastRaw) {
-    b.lastRaw = raw;
-    b.changedAt = now;
+// Both buttons together: into Gallery Mode, or back to Mochi (where it left off)
+void toggleGallery(uint32_t now) {
+  if (!gallery.active()) {
+    gallery.enter(now);
+    mochiLog("GALLERY", gallery.item().name);
+  } else {
+    gallery.exit();
+    mochiLog("GALLERY", "exit");
+    mochi.resume(now);
   }
-  if (raw != b.stable && now - b.changedAt >= DEBOUNCE_MS) {
-    b.stable = raw;
-    return b.stable;
+}
+
+// A button event: in Gallery Mode it navigates, otherwise it goes to Mochi
+void onButtonEvent(ButtonEvent ev, uint32_t now) {
+  if (ev == ButtonEvent::None) return;
+  if (ev == ButtonEvent::Both) {
+    toggleGallery(now);
+  } else if (gallery.active()) {             // button 1: previous item, button 2: next item
+    bool moved = ev == ButtonEvent::Button1 ? gallery.previous(now) : gallery.next(now);
+    if (moved) mochiLog(ev == ButtonEvent::Button1 ? "GALLERY <" : "GALLERY >", gallery.item().name);
+  } else {
+    mochi.onButton(ev == ButtonEvent::Button1 ? 0 : 1, now);
   }
-  return false;
 }
 
 void setup() {
@@ -123,13 +136,13 @@ void setup() {
 
 void loop() {
   uint32_t now = millis();
-  if (pressed(btn1)) mochi.onButton(0, now);
-  if (pressed(btn2)) mochi.onButton(1, now);
+  onButtonEvent(buttons.update(digitalRead(BTN_1) == LOW, digitalRead(BTN_2) == LOW, now), now);
 #if MOCHI_HW_TEST
-  while (Serial.available()) {                 // '1' / '2' over Serial = button 1 / 2
+  while (Serial.available()) {                 // '1' / '2' over Serial = button 1 / 2, '3' = both
     char c = Serial.read();
-    if (c == '1' || c == '2') mochi.onButton(c - '1', millis());
+    if (c == '1' || c == '2' || c == '3') onButtonEvent(c == '1' ? ButtonEvent::Button1 : c == '2' ? ButtonEvent::Button2 : ButtonEvent::Both, millis());
   }
 #endif
-  mochi.update(now);
+  if (gallery.active()) gallery.update(now);   // Mochi is paused meanwhile (nothing advances)
+  else mochi.update(now);
 }
