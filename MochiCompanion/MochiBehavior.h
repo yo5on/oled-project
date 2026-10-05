@@ -641,11 +641,27 @@ private:
     blinkPending_ = false;
     resting_ = false;
     beginSequence();
-    queueMorph(EXPRESSIONS[e].anim, EXPRESSIONS[e].from, morphMsValue);
+    const ExprWaypoint* w = waypoint(e);
+    if (w && w->in) {                        // through the waypoint face, in ...
+      queueMorph(w->anim, w->frame, morphMsValue);
+      queueStill(w->anim, w->frame, WAYPOINT_HOLD_MS);
+      queueMorph(EXPRESSIONS[e].anim, EXPRESSIONS[e].from, morphMs());
+    } else {
+      queueMorph(EXPRESSIONS[e].anim, EXPRESSIONS[e].from, morphMsValue);
+    }
     queueExpr(e, loopsFor(e));
+    if (w && w->out) {                       // ... and out again: recovering gradually
+      queueMorph(w->anim, w->frame, morphMs());
+      queueStill(w->anim, w->frame, WAYPOINT_HOLD_MS);
+    }
     decision(why, e);
     if (EXPRESSIONS[e].rare != R_NONE) lastRare_[EXPRESSIONS[e].rare] = lastAnyRare_ = now;
     run(why, SETTLE_EMOTION_MS, now);
+  }
+
+  static const ExprWaypoint* waypoint(ExprId e) {
+    for (const ExprWaypoint& w : EXPR_WAYPOINTS) if (w.e == e) return &w;
+    return nullptr;
   }
 
   // Log a decision: why, which expression, and the feelings behind it

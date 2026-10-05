@@ -2,300 +2,259 @@
 
 <img src="https://raw.githubusercontent.com/yo5on/yo5on/main/hd-projects.svg" width="620" alt="projects"/>
 
-<samp><b>OLED EYE ANIMATION</b></samp>
+<samp><b>MOCHI · OLED COMPANION</b></samp>
 
-<samp>esp32 · ssd1306 · arduino · embedded systems</samp>
+<samp>esp32 · ssd1306 · arduino · embedded animation</samp>
+
+<br/>
+
+<img src="docs/mochi/mochi-happy.gif" width="400" alt="Mochi smiling and changing expressions"/>
 
 </div>
 
 ---
 
-<div align="center"><samp>An ESP32-based OLED project with an animated robot face, mood-driven Eye Mode with button reactions, two-button control, and empty media slots ready for future content.</samp></div>
+<div align="center"><samp>A tiny animated companion that lives on a 128×64 OLED. Mochi has moods, reacts to two buttons, drifts between expressions with smooth morphs, falls asleep when left alone, and wakes up on its own.</samp></div>
 
 ---
 
-<div align="center"><samp><b>Project Overview</b></samp></div>
+## Overview
 
-<samp>The sketch drives a 128×64 SSD1306 OLED from an ESP32 and has two modes. Normal Mode steps through 5 video slots and 5 image slots, which are intentionally empty for now. Eye Mode shows a robot face that switches automatically between 11 animated emotions.</samp>
+Mochi is an ESP32 sketch that turns a small SSD1306 OLED into a character with a life of its own. You don't pick animations from a menu. Mochi chooses its own faces based on how it feels, and the two buttons are ways to interact with it: a friendly tap, a poke, or pestering it until it gets cross.
 
-<samp>Every emotion is drawn live from one curved eye shape. No per-frame bitmaps are used, and all timing is non-blocking, so the buttons stay responsive while the face animates.</samp>
+Both buttons together open **Gallery Mode**, which plays photos and short videos on the same screen and then hands the display back to Mochi exactly where it left off.
 
-<samp>The project provides practical experience with:</samp>
+The repository also keeps the earlier **OLED Eye Animation** sketch, a procedurally drawn robot face, as a separate working project.
 
-- <samp>Embedded systems</samp>
-- <samp>OLED graphics with Adafruit GFX</samp>
-- <samp>Procedural animation</samp>
-- <samp>Button debouncing and input handling</samp>
-- <samp>Non-blocking timing with <code>millis()</code></samp>
+## Features
 
----
+- **Expressive faces.** 40 expressions built from 34 Mochi animations: happy, sad, angry, excited, funny and dramatic.
+- **Smooth morphs.** Every change of face is morphed shape by shape. Nothing jumps straight to the next picture.
+- **Adaptive transition timing.** Small changes are quick, while large ones take a few more in-between frames.
+- **Personality and mood.** Feelings build up over time and set a mood, and the mood decides which faces Mochi picks.
+- **Button reactions.** The two buttons do different things, and Mochi remembers how you have been treating it.
+- **Sleep and breathing.** When tired and left alone, Mochi dozes off and breathes slowly in its sleep.
+- **Natural and manual wake.** It wakes on its own after a while, or right away when you press a button.
+- **Gallery Mode.** Browse photos and play looping videos, then go straight back to Mochi.
 
-<div align="center"><samp><b>Features</b></samp></div>
+## Hardware
 
-- <samp><b>Animated robot face</b> — 11 emotions drawn live with Adafruit GFX, with emotion-specific animation.</samp>
-- <samp><b>Eye Mode</b> — automatic mood-weighted emotion selection without repeating the same emotion twice in a row.</samp>
-- <samp><b>Button reactions</b> — PREV/NEXT presses can trigger reactions for Happy and Sad after a random 1–5 click threshold.</samp>
-- <samp><b>Two-button mode switching</b> — PREV and NEXT browse media in Normal Mode; both together switch modes.</samp>
-- <samp><b>Future-ready media slots</b> — 5 video slots and 5 image slots are present and currently empty.</samp>
-- <samp><b>Non-blocking animation</b> — timing is handled with <code>millis()</code> so input remains responsive.</samp>
-
----
-
-<div align="center"><samp><b>Hardware</b></samp></div>
-
-| <samp>Part</samp> | <samp>Connection</samp> | <samp>ESP32</samp> |
-|---|---|---|
-| <samp>SSD1306 OLED 128×64</samp> | <samp>VCC</samp> | <samp>3V3</samp> |
-| <samp>SSD1306 OLED 128×64</samp> | <samp>GND</samp> | <samp>GND</samp> |
-| <samp>SSD1306 OLED 128×64</samp> | <samp>SDA</samp> | <samp>GPIO 22</samp> |
-| <samp>SSD1306 OLED 128×64</samp> | <samp>SCL</samp> | <samp>GPIO 21</samp> |
-| <samp>PREV button</samp> | <samp>one leg</samp> | <samp>GPIO 25</samp> |
-| <samp>PREV button</samp> | <samp>other leg</samp> | <samp>GND</samp> |
-| <samp>NEXT button</samp> | <samp>one leg</samp> | <samp>GPIO 26</samp> |
-| <samp>NEXT button</samp> | <samp>other leg</samp> | <samp>GND</samp> |
-
-<samp><b>OLED address:</b> <code>0x3C</code>. Buttons use <code>INPUT_PULLUP</code>, so a pressed button reads <code>LOW</code>. This project intentionally uses <code>SDA = GPIO 22</code> and <code>SCL = GPIO 21</code> through <code>Wire.begin(22, 21)</code>.</samp>
-
----
-
-<div align="center"><samp><b>Modes</b></samp></div>
-
-<samp><b>Normal Mode</b></samp>
-
-- <samp>Starts on Video slot 1.</samp>
-- <samp>PREV and NEXT browse 5 video slots and 5 image slots.</samp>
-- <samp>The 10 media slots are currently empty and display <code>Slot N: not loaded</code>.</samp>
-
-<samp><b>Eye Mode</b></samp>
-
-- <samp>Press PREV + NEXT together to enter.</samp>
-- <samp>One of 11 emotions is selected immediately using weighted randomness.</samp>
-- <samp>The emotion animates continuously at about 30 FPS (one frame every 33 ms).</samp>
-- <samp>After a randomized interval, another emotion is selected.</samp>
-- <samp>The same emotion is never selected twice in a row.</samp>
-- <samp>Single PREV/NEXT presses become reaction clicks instead of changing the emotion.</samp>
-
-<samp><b>Exit</b></samp>
-
-- <samp>Press both buttons together again to return to the same media slot shown before Eye Mode.</samp>
-
----
-
-<div align="center"><samp><b>Emotions</b></samp></div>
-
-| <samp>#</samp> | <samp>Name</samp> | <samp>Weight</samp> | <samp>Time</samp> |
-|---:|---|---:|---|
-| <samp>1</samp> | <samp>Happy</samp> | <samp>14</samp> | <samp>4–8 s</samp> |
-| <samp>2</samp> | <samp>Sad</samp> | <samp>3</samp> | <samp>5–8 s</samp> |
-| <samp>3</samp> | <samp>Angry</samp> | <samp>4</samp> | <samp>3.5–6 s</samp> |
-| <samp>4</samp> | <samp>Sleepy</samp> | <samp>5</samp> | <samp>6–10 s</samp> |
-| <samp>5</samp> | <samp>Surprised</samp> | <samp>2</samp> | <samp>2.5–4.5 s</samp> |
-| <samp>6</samp> | <samp>Worried</samp> | <samp>3</samp> | <samp>4–7 s</samp> |
-| <samp>7</samp> | <samp>Confused</samp> | <samp>5</samp> | <samp>4–7 s</samp> |
-| <samp>8</samp> | <samp>Excited</samp> | <samp>8</samp> | <samp>3–6 s</samp> |
-| <samp>9</samp> | <samp>Bored</samp> | <samp>5</samp> | <samp>5–9 s</samp> |
-| <samp>10</samp> | <samp>Scared</samp> | <samp>2</samp> | <samp>3–5 s</samp> |
-| <samp>11</samp> | <samp>Furious</samp> | <samp>2</samp> | <samp>3–5 s</samp> |
-
-<samp>The weights total 53. Higher values make an emotion more likely to be selected before the no-repeat rule.</samp>
-
----
-
-<div align="center"><samp><b>Eye Design</b></samp></div>
-
-- <samp>One curved eye shape (<code>rfEye()</code>): a superellipse between an oval and a rounded rectangle, with slightly flattened top and bottom and never a perfect circle.</samp>
-- <samp>Emotions deform that same shape: stretched, squashed, tilted, or cut by curved upper and lower lids.</samp>
-- <samp>The whole face is drawn at 140% of the base design (<code>RF_SCALE</code>), with eyes kept narrow at 72% width (<code>RF_EYE_NARROW</code>).</samp>
-- <samp>Small extras such as mouths, a tear, "z", "?", sparkles, and an anger mark are drawn with the same integer math.</samp>
-- <samp>Design reference: the eye style was inspired by this <a href="https://www.oledanimationmaker.com/?s=DBdtgyEY6vSbQFSxpzuu">OLED Animation Maker design</a>; the implementation in <code>EyeVariants.h</code> is original.</samp>
-
----
-
-<div align="center"><samp><b>Reactions</b></samp></div>
-
-<samp>In Eye Mode, every PREV/NEXT press increments a shared click counter. A random threshold from 1–5 clicks is selected when Eye Mode starts and after each reaction or reset.</samp>
-
-| <samp>Emotion</samp> | <samp>Implemented reaction</samp> |
+| Part | Notes |
 |---|---|
-| <samp>Happy</samp> | <samp><b>I lovee youhhh!</b> / <b>Mwahhh mwahh mwahhh</b></samp> |
-| <samp>Sad</samp> | <samp><b>I miss youhh!</b></samp> |
+| ESP32 Dev Module | Arduino core for ESP32 2.0.17 |
+| SSD1306 OLED, 128×64, I2C | address `0x3C` |
+| 2 × push buttons | to GND, internal pull-ups |
 
-- <samp>The screen turns white and the message is typed in bold black text, one character about every 70 ms.</samp>
-- <samp>The message is held for about 1.6 s, then the same emotion resumes without a new selection.</samp>
-- <samp>Presses during a reaction are ignored; both buttons still exit Eye Mode.</samp>
-- <samp>Other emotions reset the reaction counter when the threshold is reached but show no text.</samp>
+### Wiring
 
----
-
-<div align="center"><samp><b>Previews</b></samp></div>
-
-![All 11 emotions on a 128x64 OLED](docs/eye-emotions-sheet.png)
-
-![Animated preview of the 11 emotions](docs/eye-mode-preview.gif)
-
-<div align="center"><samp>These previews are rendered from the same shapes and integer drawing logic used by <code>EyeVariants.h</code>.</samp></div>
-
----
-
-<div align="center"><samp><b>Button Behavior</b></samp></div>
-
-| <samp>Input</samp> | <samp>Normal Mode</samp> | <samp>Eye Mode</samp> |
-|---|---|---|
-| <samp>PREV</samp> | <samp>Previous media slot</samp> | <samp>Reaction click</samp> |
-| <samp>NEXT</samp> | <samp>Next media slot</samp> | <samp>Reaction click</samp> |
-| <samp>PREV + NEXT</samp> | <samp>Enter Eye Mode</samp> | <samp>Exit to the same media slot</samp> |
-
-<samp><b>Debounce:</b> 30 ms stable input.</samp>
-
-<samp><b>Combination window:</b> up to 80 ms for detecting simultaneous presses.</samp>
-
-<samp><b>Single-button repeat:</b> one PREV/NEXT action every 200 ms at most.</samp>
-
-<samp>Holding both buttons switches mode only once until both are released.</samp>
-
----
-
-<div align="center"><samp><b>Software</b></samp></div>
-
-| <samp>Software</samp> | <samp>Purpose</samp> |
+| From | To |
 |---|---|
-| <samp>Arduino IDE</samp> | <samp>Sketch development and upload</samp> |
-| <samp>ESP32 Arduino core 2.0.17</samp> | <samp>ESP32 runtime and board support</samp> |
-| <samp>Adafruit SSD1306</samp> | <samp>OLED driver</samp> |
-| <samp>Adafruit GFX Library</samp> | <samp>Drawing and rendering</samp> |
-| <samp>Adafruit BusIO</samp> | <samp>Adafruit library dependency</samp> |
-| <samp>Wire</samp> | <samp>I2C communication</samp> |
+| OLED VCC | 3V3 |
+| OLED GND | GND |
+| OLED SDA | GPIO 22 |
+| OLED SCL | GPIO 21 |
+| Button 1 | GPIO 25 → GND |
+| Button 2 | GPIO 26 → GND |
 
-<samp>The included <code>esp32-eyes-main/</code> directory is reference material only. It is not compiled or linked by this project.</samp>
+### OLED / display
 
----
+The display runs over I2C with `Wire.begin(22, 21)`. Note that SDA and SCL are deliberately on 22 and 21. Every frame is a full 128×64, 1-bit image (1024 bytes) pushed in one transfer, about 29 ms per frame on the ESP32. Some source clips are stored black-on-white, and the player inverts them in software so every face appears as light on dark.
 
-<div align="center"><samp><b>Project Structure</b></samp></div>
+### ESP32
+
+The animations live in flash as raw or PackBits-compressed frames, and RAM use stays around 105 KB. The public build fits the default partition. The build with your own gallery media needs **Huge APP**, and the sketch stops with a clear compile error if you forget.
+
+### Buttons
+
+Both buttons use `INPUT_PULLUP`, so a press reads `LOW`. Inputs are debounced (30 ms), and a press of both buttons counts as a combo when they land within 150 ms of each other. A combo fires once and waits until both buttons are released, so it never leaks into single presses.
+
+## Mochi expression system
+
+Every expression is a named slice of an animation, such as `SMILE`, `GLOOM`, `FURIOUS` or `HEARTS`. Each one carries:
+
+- which frames to play, and how many times;
+- the moods it belongs to (happy, curious, playful, sad and so on);
+- how strong it is, so mild moods pick gentle faces and strong moods pick big ones;
+- how often it should come up compared with its neighbours.
+
+Mochi doesn't repeat itself much: recently used faces are less likely, and no single animation dominates a long session. Some expressions play once and settle, like a blink, a glance or a beam. Others loop for a moment before moving on.
+
+## Natural expression transitions
+
+Switching faces is where an OLED character usually looks cheap, so most of the work went here.
+
+- **Morphs.** The current face and the next one are split into parts, such as eyes, mouth and extras. Each part is blended into its counterpart over a few in-between frames.
+- **Adaptive pacing.** The number of in-between frames depends on how much actually changes. A twitch of the eyelids takes one or two steps, and a whole new face takes up to seven. The easing sits between linear and smoothstep, so motion neither crawls nor snaps.
+- **Eye bridge.** When the eyes change shape completely, for example round eyes turning into heart eyes, Mochi briefly closes its eyes, the closed faces morph, and the new eyes open. It reads like a natural blink.
+- **Waypoints.** A few dramatic faces, like sobbing and gloom, pass through an in-between pose on the way in or out, so they ease in instead of popping.
+- **Button reactions** start from whatever is on screen at that moment, even mid-morph.
+
+## Personality and behaviour
+
+Mochi's behaviour runs as a small pipeline:
 
 ```text
-OLED_Eye_Animation/
-├── OLED_Eye_Animation.ino         Main sketch: media slots, modes, buttons, reactions
-├── EyeVariants.h                  11 emotions, geometry, drawing and animation
-├── README.md                      Project documentation
-├── docs/
-│   ├── eye-emotions-sheet.png     Emotion preview sheet
-│   └── eye-mode-preview.gif       Animated emotion preview
-└── esp32-eyes-main/               Reference copy of esp32-eyes (not compiled)
+feelings  →  mood  →  intent  →  expression
 ```
 
-<samp>The 5 video slots and 5 image slots are intentionally empty. Future media data is designed to be inserted into <code>OLED_Eye_Animation.ino</code> at the marked placeholders.</samp>
+- **Feelings** (energy, happiness, annoyance, curiosity and so on) drift slowly over time and change with every interaction.
+- **Mood** is one of nine states: neutral, happy, curious, playful, excited, annoyed, sad, sleepy and affectionate. A mood lasts a while and only moves to neighbouring moods. A happy Mochi doesn't suddenly turn furious.
+- **Intent** decides what to do next: chain another expression, pause briefly, or rest on the mood's face.
+- **Resting faces** aren't frozen. They blink, sway slightly or play their own idle frames.
 
----
+## Sleep, breathing and natural wake
 
-<div align="center"><samp><b>Installation</b></samp></div>
+- **Falling asleep.** When Mochi is low on energy and has been left alone for a few minutes, its eyes get heavy and close in stages. It always falls asleep eventually if nobody plays with it.
+- **Breathing.** While asleep, the closed eyes slowly swell and settle. It drifts between light, deep and deepest sleep, and every so often gives a tiny twitch or a deeper sigh. The eyes never open during sleep.
+- **Natural wake.** After 5–15 minutes Mochi wakes by itself between two breaths: the lids lift slowly, it gives a slow blink and a yawn, and it stays groggy for a while before getting back to normal.
+- **Manual wake.** Press a button and Mochi wakes immediately, a little startled.
 
-<samp><b>1. Clone the repository</b></samp>
+## Button interactions
+
+| Input | Mochi | Gallery Mode |
+|---|---|---|
+| **Button 1** (GPIO 25) | Friendly tap: wakes Mochi and makes it happier and more playful | Previous item |
+| **Button 2** (GPIO 26) | Poke: surprises Mochi and makes it curious | Next item |
+| **Many presses quickly** | Mochi gets annoyed, sometimes dizzy, and eventually furious | – |
+| **Both buttons** | Enter Gallery Mode | Back to Mochi |
+
+Mochi's reaction depends on its mood. A sleepy Mochi blinks at you, and a happy one beams. Keep pestering it and it climbs a ladder from deadpan to annoyed to furious.
+
+## Gallery Mode
+
+Gallery Mode is a small photo and video viewer for the same screen, reusing the media from the earlier V3 viewer sketch.
+
+- Photos stay on screen until you move on.
+- Videos play at their own frame rate and loop.
+- Button 1 and button 2 move backwards and forwards with wrap-around.
+- Leaving the gallery returns Mochi exactly as it was: same face, same mood. The button press that closed the gallery doesn't count as poking Mochi.
+
+### Using your own media
+
+The media is never stored in this repository. It's generated locally into a git-ignored header:
 
 ```bash
-git clone https://github.com/yo5on/oled-project.git OLED_Eye_Animation
+python MochiCompanion/tools/make_gallery.py path/to/v3.ino
 ```
 
-<samp>The Arduino IDE requires the sketch folder name to match the <code>.ino</code> filename. Cloning into <code>OLED_Eye_Animation</code> keeps <code>OLED_Eye_Animation.ino</code> in a matching folder.</samp>
+This writes `MochiCompanion/gallery_media_private.h`. It is listed in `.gitignore` and should stay local. The tool also accepts OLED Animation Maker exports and raw bitmaps (`file.txt@WxH`), and supports `--order` and `--skip`. Without that file the sketch builds with a single placeholder screen.
 
-<samp><b>2. Open the sketch</b></samp>
+> Build with **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** when the private media header is present.
 
-<samp>Open <code>OLED_Eye_Animation/OLED_Eye_Animation.ino</code> in Arduino IDE and keep <code>EyeVariants.h</code> beside it.</samp>
+## Animation system
 
-<samp><b>3. Install ESP32 support</b></samp>
+Two frame formats share one player:
 
-<samp>Install <b>esp32 by Espressif Systems</b> through Boards Manager.</samp>
+| Format | Source | Storage |
+|---|---|---|
+| RAW | 19 clips cut from one long 250-frame Mochi recording | 1024 bytes per frame, stored once and inverted on the fly |
+| PACKED | 15 separate emote GIFs | PackBits-compressed frames |
 
-<samp><b>4. Install libraries</b></samp>
+The player (`MochiPlayer.h`) plays, holds and morphs frames, and the morph engine (`MochiMorph.h`) works on the parts of a face rather than on raw pixels. All timing is non-blocking with `millis()`, so the buttons stay responsive during every animation and morph.
 
-<samp>Install <b>Adafruit SSD1306</b> through Library Manager and accept the required dependencies.</samp>
+## Animation cleanup and quality improvements
 
-<samp><b>5. Select the board</b></samp>
+The original frames were extracted from video and had small defects that look bad on a crisp OLED. These are fixed at playback time, and the stored animation data is unchanged:
 
-<samp><b>Tools → Board → esp32 → ESP32 Dev Module</b></samp>
+- **Despeckle.** Stray single pixels are removed from a handful of noisy animations, such as Furious, Annoyed and Laugh.
+- **Scanline fill.** One-pixel gaps in the Evil Grin eyes are closed.
+- **Closed-eye frame fix.** A broken blink frame is replaced with clean, slightly open lids.
+- **Range tuning.** Each expression starts and ends on a clean frame, so morphs begin from a sensible face.
+- **Removed clip.** One animation (`MOCHI_26`) was dropped completely because it couldn't be made to look right.
 
-<samp><b>6. Select the port</b></samp>
+## Animation Preview
 
-<samp>Choose the COM port connected to the ESP32.</samp>
+<div align="center"><samp>Recorded from the firmware's own frames and timing (expression → morph → expression), rendered in the blue-white OLED look.</samp></div>
 
-<samp><b>7. Upload</b></samp>
+<br/>
 
-<samp>If upload stalls at <code>Connecting...</code>, hold the board's <b>BOOT</b> button while the upload starts.</samp>
+<table>
+<tr>
+<td align="center"><img src="docs/mochi/mochi-happy.gif" width="380" alt="Happy and calm faces"/><br/><samp><b>Happy / calm</b></samp><br/><sub>calm · smile · beam · grin · smug</sub></td>
+<td align="center"><img src="docs/mochi/mochi-sad.gif" width="380" alt="Sad faces"/><br/><samp><b>Sad</b></samp><br/><sub>worried · teary · gloom · sob · crying</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/mochi/mochi-angry.gif" width="380" alt="Angry faces"/><br/><samp><b>Angry</b></samp><br/><sub>deadpan · annoyed · squeeze · furious</sub></td>
+<td align="center"><img src="docs/mochi/mochi-excited.gif" width="380" alt="Excited faces"/><br/><samp><b>Excited</b></samp><br/><sub>surprised · chatter · XD · hearts · kiss</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/mochi/mochi-funny.gif" width="380" alt="Funny faces"/><br/><samp><b>Funny</b></samp><br/><sub>uwu · cheeky · shy · peek · evil grin</sub></td>
+<td align="center"><img src="docs/mochi/mochi-dramatic.gif" width="380" alt="Dramatic faces"/><br/><samp><b>Special / dramatic</b></samp><br/><sub>shock · scream · dizzy · glitch · evil</sub></td>
+</tr>
+<tr>
+<td align="center" colspan="2"><img src="docs/mochi/mochi-sleep.gif" width="380" alt="Falling asleep, breathing and waking up"/><br/><samp><b>Sleep / wake</b></samp><br/><sub>drowsy → asleep and breathing → woken by a button → groggy</sub></td>
+</tr>
+</table>
 
-<samp><b>8. Test</b></samp>
+## Build and upload
 
-- <samp>Open Serial Monitor at <b>115200</b> baud and check for <code>OLED READY</code>.</samp>
-- <samp>Press PREV/NEXT and confirm media-slot navigation.</samp>
-- <samp>Press both buttons together and check for <code>EYE MODE</code>.</samp>
-- <samp>Use PREV/NEXT in Eye Mode and verify the reaction logic.</samp>
+1. Install **Arduino IDE** and add **esp32 by Espressif Systems** (2.0.17) in Boards Manager.
+2. Install **Adafruit SSD1306** from Library Manager and accept its dependencies (Adafruit GFX, Adafruit BusIO).
+3. Open `MochiCompanion/MochiCompanion.ino`.
+4. Select **Tools → Board → ESP32 Dev Module** and your COM port.
+5. Partition scheme: **Default** for the public build, or **Huge APP** if you generated your own gallery media.
+6. Upload. If it hangs at `Connecting...`, hold **BOOT** while the upload starts.
+7. Optional: open Serial Monitor at **115200** baud to watch Mochi's moods and decisions.
 
----
+| Build | Flash | RAM |
+|---|---|---|
+| Public (placeholder gallery) | ~895 KB | ~105 KB |
+| With private gallery media (Huge APP) | ~1.49 MB | ~105 KB |
 
-<div align="center"><samp><b>Usage</b></samp></div>
+`MOCHI_HW_TEST` at the top of the sketch switches to fast timings for bench testing: moods change in seconds, Mochi sleeps after 2 minutes, and serial keys act as buttons.
 
-1. <samp>Power on. Normal Mode starts on Video slot 1.</samp>
-2. <samp>Use PREV/NEXT to browse the 5 video and 5 image slots.</samp>
-3. <samp>Press both buttons to enter Eye Mode.</samp>
-4. <samp>Watch the emotion animate and change automatically.</samp>
-5. <samp>Press PREV/NEXT to trigger the reaction counter.</samp>
-6. <samp>Press both buttons again to return to the previous media slot.</samp>
+## Project structure
 
----
+```text
+oled-project/
+├── MochiCompanion/                 Mochi, the animated companion (main project)
+│   ├── MochiCompanion.ino          Display, buttons, mode switching
+│   ├── MochiBehavior.h             Personality, moods, sleep and wake, reactions
+│   ├── MochiEmotion.h              Feelings and moods
+│   ├── MochiExpressions.h          The 40 expressions and their tuning
+│   ├── MochiPlayer.h               Playback, morph pacing, eye bridge, cleanup
+│   ├── MochiMorph.h                Part-based morph engine
+│   ├── MochiAnimations.h           Animation table
+│   ├── MochiButtons.h              Debounce and two-button combo
+│   ├── MochiGallery.h              Gallery Mode
+│   ├── gallery_placeholder.h       Public placeholder gallery
+│   ├── animations/                 Frame data
+│   └── tools/make_gallery.py       Builds your local, git-ignored gallery header
+├── OLED_Eye_Animation/             Earlier procedural robot-eye sketch (still works)
+│   ├── OLED_Eye_Animation.ino
+│   └── EyeVariants.h
+├── docs/
+│   ├── mochi/                      Animation previews
+│   └── eyes/                       Robot-eye previews
+└── archive/
+    └── esp32-eyes-main/            Old reference code, not compiled
+```
 
-<div align="center"><samp><b>Current Content</b></samp></div>
+### OLED Eye Animation
 
-| <samp>Content</samp> | <samp>Count</samp> | <samp>Status</samp> |
-|---|---:|---|
-| <samp>Video slots</samp> | <samp>5</samp> | <samp>Empty</samp> |
-| <samp>Image slots</samp> | <samp>5</samp> | <samp>Empty</samp> |
-| <samp>Emotions</samp> | <samp>11</samp> | <samp>Implemented</samp> |
+The earlier sketch draws 11 robot-eye emotions live from one curved eye shape, with no bitmaps, and has its own media slots and button reactions. Open `OLED_Eye_Animation/OLED_Eye_Animation.ino` to use it.
 
-<samp><b>Normal Mode order:</b> <code>Video 1 → Video 2 → Video 3 → Video 4 → Video 5 → Image 1 → Image 2 → Image 3 → Image 4 → Image 5</code></samp>
+<p align="center"><img src="docs/eyes/eye-mode-preview.gif" width="380" alt="Robot eye emotions"/></p>
 
----
+## Archive
 
-<div align="center"><samp><b>OLED Animation Maker</b></samp></div>
+`archive/` keeps code that is no longer part of any build but is worth keeping for reference and history:
 
-<samp>Want to create your own OLED animations? You can use <a href="https://www.oledanimationmaker.com/">OLED Animation Maker</a> to create and customize animations, import visual content, preview them, and generate Arduino-ready animation data/code for OLED projects.</samp>
+- **`archive/esp32-eyes-main/`** is the [esp32-eyes](https://github.com/playfultechnology/esp32-eyes) source that an early version of the robot-eye sketch was based on. It is kept with its original AGPL-3.0 license.
 
-<samp>This project can be extended with custom animations created using the tool. Generated 128×64 bitmap data can be pasted into the empty video and image slots in <code>OLED_Eye_Animation.ino</code>.</samp>
+## Credits
 
-<div align="center"><samp>🔗 <a href="https://www.oledanimationmaker.com/">https://www.oledanimationmaker.com/</a></samp></div>
-
----
-
-<div align="center"><samp><b>Development Notes</b></samp></div>
-
-| <samp>Area</samp> | <samp>Implementation</samp> |
-|---|---|
-| <samp>Pins and OLED</samp> | <samp><code>OLED_Eye_Animation.ino</code>: <code>BTN_PREV</code>, <code>BTN_NEXT</code>, <code>SCREEN_ADDR</code>, <code>Wire.begin(22, 21)</code></samp> |
-| <samp>Content</samp> | <samp><code>contents[]</code> and <code>videoFrameMs[]</code></samp> |
-| <samp>Navigation</samp> | <samp><code>nextContent()</code>, <code>previousContent()</code>, <code>playContent()</code></samp> |
-| <samp>Emotions</samp> | <samp><code>EyeVariantId</code>, <code>eyeVariants[]</code>, <code>rfDrawEmotion()</code></samp> |
-| <samp>Geometry</samp> | <samp><code>rfEye()</code>, <code>rfLids()</code>, <code>rfArc()</code>, <code>rfStroke()</code></samp> |
-| <samp>Animation</samp> | <samp><code>drawEyeFrame()</code>, <code>eyeAnimRestart()</code>, <code>eyeAnimUpdate()</code></samp> |
-| <samp>Mood selection</samp> | <samp><code>eyeMoods[]</code>, <code>pickRandomEye()</code>, <code>autoSelectEye()</code></samp> |
-| <samp>Reactions</samp> | <samp><code>handleEyeModePress()</code>, <code>newReactThreshold()</code>, <code>startReaction()</code>, <code>drawReaction()</code>, <code>updateReaction()</code></samp> |
-| <samp>Modes</samp> | <samp><code>Mode</code>, <code>enterEyeMode()</code>, <code>exitEyeMode()</code>, <code>loop()</code></samp> |
-| <samp>Buttons</samp> | <samp><code>DebouncedButton</code>, <code>updateButton()</code>, <code>handleButtons()</code></samp> |
-
-<samp>When adding or removing an emotion, keep <code>EyeVariantId</code>, <code>eyeVariants[]</code>, the corresponding <code>rfDrawEmotion()</code> case, <code>eyeMoods[]</code>, and the <code>EYES</code> slots aligned.</samp>
-
----
-
-<div align="center"><samp><b>Author</b></samp></div>
+- **Mochi animations** are from the *Dasai Mochi* emotes, via the [huykhong](https://www.tiktok.com/@_huykhong) ESP32 Mochi clone and gif2cpp. All rights to the original character and artwork belong to their creators.
+- **Robot-eye style** was inspired by a design made with [OLED Animation Maker](https://www.oledanimationmaker.com/). The `EyeVariants.h` implementation is original.
+- **esp32-eyes** is by Alastair Aitchison (Playful Technology) and Luis Llamas, AGPL-3.0 (archived reference).
+- **Libraries:** Adafruit SSD1306, Adafruit GFX and Adafruit BusIO.
 
 <div align="center">
-<samp><strong>Yoson</strong></samp>
-
-<samp>Embedded systems, robotics, and hardware projects.</samp>
-
-<samp>GitHub: https://github.com/yo5on</samp>
-</div>
 
 ---
 
-<div align="center"><samp><b>License</b></samp></div>
+<samp><strong>Yoson</strong> · embedded systems, robotics and hardware projects</samp>
 
-<samp>The current robot-face graphics and animations in <code>EyeVariants.h</code> are original to this project. The style was inspired by a design made with <a href="https://www.oledanimationmaker.com/?s=DBdtgyEY6vSbQFSxpzuu">OLED Animation Maker</a>. An earlier implementation was derived from <a href="https://github.com/playfultechnology/esp32-eyes">esp32-eyes</a> by Alastair Aitchison (Playful Technology) and Luis Llamas under AGPL-3.0; that reference source remains in <code>esp32-eyes-main/</code> with its license.</samp>
+<samp><a href="https://github.com/yo5on">github.com/yo5on</a></samp>
 
-<div align="center"><samp>If you find this project useful, consider giving the repository a star.</samp></div>
+</div>
