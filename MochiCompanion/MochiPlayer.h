@@ -34,6 +34,14 @@ static const uint16_t MORPH_MIN_STEP_MS = 34;
 static const uint16_t MORPH_STEP_PX = 350;
 static const uint8_t  MORPH_MAX_STEPS = 7;
 static const uint16_t MORPH_PACED_STEP_MS = 40;
+// Eye-bridge transition: when the eyes change shape a lot (area x2 or height x1.7) and both
+// faces have eyelids, the old eyes close, the closed face changes (lids move, mouth and the
+// rest morph), then the new eyes open: eyes and mouth move at their own time, like a face,
+// instead of one shape melting into another
+static const uint16_t BRIDGE_CLOSE[2] = { 150, 70 };     // eyelid openness while closing ...
+static const uint16_t BRIDGE_OPEN[2]  = { 70, 150 };     // ... and while the new eyes open
+static const uint16_t BRIDGE_LIDS     = 70;              // nearly shut (solid lids, not 2 px lines) while the face changes
+static const uint8_t  BRIDGE_MAX_MID  = 4;               // in-betweens of the closed faces
 
 // Eyelid blink: half shut, shut, half open, open (the image from before the blink)
 struct BlinkStep { uint16_t open, ms; };
@@ -87,14 +95,19 @@ public:
     const uint8_t* src = this->frame(a, frame);
     for (uint16_t i = 0; i < 1024; i++) target_[i] = a.inverted ? (uint8_t)~pgm_read_byte(src + i) : pgm_read_byte(src + i);
     if (!closedFrame(id, frame, target_) && processed(id)) process(id, target_, morphBuf_);   // morph to the frame as it is shown
-    morph_.begin(shown_, target_);
+    bridge_ = depth >= 256 && eyeBridge();
+    if (!bridge_) morph_.begin(shown_, target_);
     blinking_ = false;
     morphing_ = true;
     playing_ = true;
     mStep_ = 0;
     mSteps_ = morphSteps(steps ? steps : 1, ms);
     mMs_ = ms;
-    if (depth >= 256) {                      // paced by how much the face changes
+    if (bridge_) {                           // close, change, open: paced like a blink
+      mSteps_ = (uint8_t)(2 + bMid_ + 2);
+      uint16_t paced = (uint16_t)((mSteps_ + 1) * MORPH_PACED_STEP_MS);
+      if (paced > mMs_) mMs_ = paced;
+    } else if (depth >= 256) {               // paced by how much the face changes
       uint16_t change = 0;
       for (uint16_t i = 0; i < 1024; i++) change += popcount8((uint8_t)(shown_[i] ^ target_[i]));
       uint16_t need = change / MORPH_STEP_PX;  // in-between frames for steps of <= MORPH_STEP_PX
@@ -136,8 +149,8 @@ public:
       if (k <= mStep_) return;
       if (k <= mSteps_) {
         mStep_ = (uint8_t)k;
-        uint16_t t = partial ? (uint16_t)((uint32_t)mDepth_ * mStep_ / mSteps_) : evenStep(mStep_, mSteps_);
-        morph_.render(t, morphBuf_);
+        if (bridge_) bridgeFrame(mStep_, morphBuf_);
+        else morph_.render(partial ? (uint16_t)((uint32_t)mDepth_ * mStep_ / mSteps_) : evenStep(mStep_, mSteps_), morphBuf_);
         screen_.showFrame(morphBuf_, false);
         memcpy(shown_, morphBuf_, 1024);
         if (partial && mStep_ == mSteps_) { morphing_ = false; playing_ = false; }   // stays part of the way
@@ -220,6 +233,57 @@ private:
   bool cleaned(AnimId id) const { return (cleanMask_ >> id) & 1; }
 
   static uint8_t popcount8(uint8_t v) { uint8_t n = 0; while (v) { n += v & 1; v >>= 1; } return n; }
+
+  // Eyes of img (lit pixels the eyelid blink removes): their area and their tallest column
+  bool eyeSize(const uint8_t* img, uint8_t* closed, uint16_t& area, uint8_t& height) {
+    if (!morph_.blinkFrame(img, 0, closed)) return false;
+    area = 0; height = 0;
+    for (uint8_t x = 0; x < 128; x++) {
+      uint8_t h = 0;
+      for (uint8_t y = 0; y < 64; y++) {
+        uint16_t i = y * 16 + (x >> 3); uint8_t bit = 0x80 >> (x & 7);
+        if ((img[i] & bit) && !(closed[i] & bit)) { h++; area++; }
+      }
+      if (h > height) height = h;
+    }
+    return area > 0;
+  }
+
+  // Use the eye bridge for shown_ -> target_? (sets bMid_, keeps the start image)
+  bool eyeBridge() {
+    uint16_t aA, aB; uint8_t hA, hB;
+    if (!eyeSize(shown_, morphBuf_, aA, hA) || !eyeSize(target_, cleanBuf_, aB, hB)) return false;
+    bool differ = aA > 2 * aB || aB > 2 * aA || hA * 10 > hB * 17 || hB * 10 > hA * 17;
+    if (!differ) return false;
+    uint16_t change = 0;                     // how much the closed faces differ
+    for (uint16_t i = 0; i < 1024; i++) change += popcount8((uint8_t)(morphBuf_[i] ^ cleanBuf_[i]));
+    bMid_ = (uint8_t)(change / MORPH_STEP_PX);
+    if (bMid_ < 1) bMid_ = 1;
+    if (bMid_ > BRIDGE_MAX_MID) bMid_ = BRIDGE_MAX_MID;
+    memcpy(startBuf_, shown_, 1024);
+    bReady_ = false;
+    return true;
+  }
+
+  // Step k (1..mSteps_) of an eye-bridge transition into out
+  void bridgeFrame(uint8_t k, uint8_t* out) {
+    bool ok;
+    if (k <= 2) {
+      ok = morph_.blinkFrame(startBuf_, BRIDGE_CLOSE[k - 1], out);           // the old eyes close
+    } else if (k <= 2 + bMid_) {
+      if (!bReady_) {                        // the closed faces: morph between them
+        morph_.blinkFrame(startBuf_, BRIDGE_LIDS, out);
+        morph_.blinkFrame(target_, BRIDGE_LIDS, cleanBuf_);
+        morph_.begin(out, cleanBuf_);
+        bReady_ = true;
+      }
+      morph_.render(evenStep((uint8_t)(k - 2), bMid_), out);
+      ok = true;
+    } else {
+      ok = morph_.blinkFrame(target_, BRIDGE_OPEN[k - 3 - bMid_], out);      // the new eyes open
+    }
+    if (!ok) memcpy(out, target_, 1024);
+  }
 
   // MochiMorph eases every full morph (smoothstep): on its own, the first and the last
   // in-between frame hardly differ from the start / end image (the face seems to wait,
@@ -350,6 +414,9 @@ private:
   uint8_t shown_[1024];                      // exactly what is on screen (lit pixels)
   uint8_t target_[1024], morphBuf_[1024];    // morph destination / current in-between frame
   uint8_t cleanBuf_[1024];                   // a frame of a cleaned animation before cleanup
+  uint8_t startBuf_[1024];                   // eye bridge: the face it started from
+  bool bridge_ = false, bReady_ = false;     // eye bridge running / its closed-face morph prepared
+  uint8_t bMid_ = 1;                         // eye bridge: in-betweens of the closed faces
   uint64_t cleanMask_ = 0;                   // animations shown with edge cleanup (bit = AnimId)
   uint64_t lineMask_ = 0;                    // ... and with scanline repair first
   struct ClosedFix { AnimId anim; uint8_t frame, from; uint16_t open; };
