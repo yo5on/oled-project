@@ -2,7 +2,7 @@
 // MOCHI ANIMATIONS — the 34 Mochi animations in use
 //
 // Same data and frame ranges as the ESP32_Mochi player:
-//  - 20 clips of 250frames.gif: raw 1024-byte frames inside the one
+//  - 19 clips of 250frames.gif: raw 1024-byte frames inside the one
 //    intro_trimmed_frames[] array (stored once, black-on-white -> inverted)
 //  - 15 emote GIFs: PackBits-compressed 1024-byte frames
 // Every frame is 128x64, 1 bit per pixel, 16 bytes per row, MSB = left pixel.

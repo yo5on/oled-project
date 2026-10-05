@@ -74,6 +74,17 @@ enum ExprId : uint8_t {
   E_NONE = 0xFF
 };
 
+// Expressions whose face is far from Mochi's usual one: Mochi gets there (and comes back)
+// through a waypoint face, briefly shown, so the change happens gradually like a real face.
+//   SOB: first the eyes well up (TEARY), then the sobbing; afterwards back through TEARY.
+//   GLOOM: its clip starts on the calm face and drifts into gloom by itself; afterwards the
+//   face relaxes back (eyes full size, the line gone: EXCITED_2 f10) before what follows.
+// The waypoint is an existing frame; the morphs to and from it are paced as usual.
+struct ExprWaypoint { ExprId e; AnimId anim; uint8_t frame; bool in, out; };
+static const ExprWaypoint EXPR_WAYPOINTS[] = { { E_SOB, ANIM_ANGRY_2, 24, true, true },
+                                               { E_GLOOM, ANIM_EXCITED_2, 10, false, true } };
+static const uint16_t WAYPOINT_HOLD_MS = 140;    // the waypoint face, a short moment
+
 // Short expressions that are not repeated: their last frame does not lead back to the
 // first, so a repeat would be a hard cut (BLINK: eyes jump across the screen; SQUINT:
 // squeezed shut -> wide open; PEEK, HAPPY3: a different pose) or adds nothing but a
@@ -97,8 +108,8 @@ static const Expression EXPRESSIONS[E_COUNT] = {
   // calm / idle / sleepy
   { "CALM",       ANIM_HAPPY,       0, 30, T_IDLE,                          1, R_NONE, 10 },   // f31-63 almost still, f64: sudden shift
   { "BLINK",      ANIM_BLINK,       0, LAST, T_SLEEPY,                      1, R_NONE, 10 },
-  { "GLANCE",     ANIM_MOCHI_10,    0, LAST, T_IDLE | T_CURIOUS,            1, R_NONE, 7 },
-  { "LOOKAROUND", ANIM_RELAXED,    24, 74, T_IDLE | T_CURIOUS,              1, R_NONE, 5 },
+  { "GLANCE",     ANIM_MOCHI_10,    0, LAST, T_IDLE | T_CURIOUS,            1, R_NONE, 6 },
+  { "LOOKAROUND", ANIM_RELAXED,    24, 74, T_IDLE | T_CURIOUS,              1, R_NONE, 4 },
   { "BORED",      ANIM_ANGRY,      14, 40, T_SLEEPY | T_IDLE,               1, R_NONE, 6 },   // f13: one-frame swollen in-between
   { "DROOP",      ANIM_SLEEPY_3,    0, 2,  T_SLEEPY,                        2, R_NONE, 10 },
   { "YAWN",       ANIM_RELAXED,    15, 22, T_SLEEPY,                        2, R_NONE, 10 },
@@ -119,7 +130,7 @@ static const Expression EXPRESSIONS[E_COUNT] = {
   { "EVIL_GRIN",  ANIM_EVIL_GRIN,   1, LAST, T_MISCHIEF | T_PLAYFUL,      3, R_MISCHIEF, 10 },   // f0: sparse fade-in frame
   { "EVIL",       ANIM_EVIL,        0, 3,  T_MISCHIEF | T_ANGRY,        3, R_SPITE, 10 },   // f4-5: dissolve into a different clip of the montage
   // curious
-  { "PEEK",       ANIM_MOCHI_11,    0, LAST, T_CURIOUS,                     2, R_NONE, 10 },
+  { "PEEK",       ANIM_MOCHI_11,    0, LAST, T_CURIOUS,                     1, R_NONE, 6 },    // a mild look too (3rd mild-curious face since SWEAT is gone)
   { "WINCE",      ANIM_CONFUSED_2,  0, 38, T_CURIOUS | T_OVERSTIM,        2, R_NONE, 10 },
   { "GLITCH",     ANIM_BUG,         0, LAST, T_CURIOUS,                     3, R_GLITCH, 10 },
   // surprise / excitement
@@ -137,9 +148,9 @@ static const Expression EXPRESSIONS[E_COUNT] = {
   { "ANGRY_3",    ANIM_ANGRY_3,     0, 5,  T_ANNOYED | T_ANGRY,           3, R_NONE, 10 },   // f6: dissolve frame of the source video
   { "FURIOUS",    ANIM_FURIOUS,     0, LAST, T_ANGRY,                       3, R_FURIOUS, 10 },
   // sad
-  { "GLOOM",      ANIM_EXCITED_2,  17, LAST, T_SAD,                       1, R_NONE, 10 },   // the whole sad drift: the eye keeps moving to f74
+  { "GLOOM",      ANIM_EXCITED_2,   3, LAST, T_SAD,                       1, R_NONE, 10 },   // from the calm face: the smile shrinks, the eyes shrink, the line appears (f3-74)
   { "LOOKAWAY",   ANIM_DETERMINED, 27, 42, T_SAD,                         1, R_NONE, 10 },   // f43-44: full white block (a flash)
   { "TEARY",      ANIM_ANGRY_2,    19, 29, T_SAD,                         2, R_NONE, 10 },   // later frames: camera glow halo in the source
-  { "SOB",        ANIM_SLEEPY_3,    4, 41, T_SAD,                         3, R_NONE, 10 },   // f3: closing-eyes in-between; f42+: the eyes melt into a wailing ring that breaks apart in a morph
+  { "SOB",        ANIM_SLEEPY_3,   14, 33, T_SAD,                         3, R_NONE, 10 },   // the steady sobbing: f4-13 shaky start, f34+ agitation into the wail
   { "CRYING",     ANIM_CRYING,      0, LAST, T_SAD,                         3, R_CRYING, 10 },
 };
