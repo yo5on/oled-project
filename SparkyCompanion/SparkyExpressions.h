@@ -1,5 +1,5 @@
 // =====================================================
-// MOCHI EXPRESSIONS — what each of the 34 animations means
+// SPARKY EXPRESSIONS — what each of the 34 animations means
 //
 // An expression is an animation, or the part of a long clip that carries one
 // expression (many long clips hold several expressions and long calm stretches).
@@ -14,7 +14,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "MochiAnimations.h"
+#include "SparkyAnimations.h"
 
 enum ExprTag : uint16_t {
   T_IDLE      = 1 << 0,    // calm, neutral
@@ -32,7 +32,7 @@ enum ExprTag : uint16_t {
   T_OVERSTIM  = 1 << 12,   // too much at once: flustered, wincing, dizzy
 };
 
-// Conditions for the special moments (checked by MochiBehavior::rareOk)
+// Conditions for the special moments (checked by SparkyBehavior::rareOk)
 enum RareKind : uint8_t {
   R_NONE,
   R_FURIOUS,     // annoyance has built up very high
@@ -44,19 +44,19 @@ enum RareKind : uint8_t {
   R_GLITCH,      // very curious after a quiet while
 };
 
-// Animations shown with edge cleanup (MochiPlayer::setCleanup): their stored frames have
+// Animations shown with edge cleanup (SparkyPlayer::setCleanup): their stored frames have
 // lone pixels and one-pixel holes along their strokes (noise pixels per frame, shown
 // range: WORRIED 10.2 -> 1.2, FURIOUS 14.0 -> 2.6, ANNOYED 12.1 -> 1.7, EVIL 14.0 -> 2.5,
 // ANGRY_2 6.8 -> 0.5, LAUGH (hearts) 10.2 -> 0.2; motion and thin marks unchanged).
 // Not cleaned: CRYING, SCREAM (it would eat small real details), EVIL_GRIN
 // (its stripes are the artwork), SQUINT and the rest (already clean).
-static const AnimId CLEANED_ANIMS[] = { ANIM_MOCHI_29, ANIM_FURIOUS, ANIM_ANNOYED, ANIM_EVIL, ANIM_ANGRY_2, ANIM_LAUGH };
+static const AnimId CLEANED_ANIMS[] = { ANIM_SPARKY_29, ANIM_FURIOUS, ANIM_ANNOYED, ANIM_EVIL, ANIM_ANGRY_2, ANIM_LAUGH };
 // Animations whose source video was interlaced: 1-pixel dark rows run through their solid
 // shapes (EVIL_GRIN: up to 330 pixels per frame, visible as broken horizontal lines on the
-// OLED). They are closed before the edge cleanup (MochiPlayer::setScanlineFill).
+// OLED). They are closed before the edge cleanup (SparkyPlayer::setScanlineFill).
 static const AnimId SCANLINE_ANIMS[] = { ANIM_EVIL_GRIN };
 // Broken closed-eye frames of the source video, shown as the eyes of a neighbouring frame
-// closed by the eyelid blink (MochiPlayer::setClosedFrame): BLINK f3 (loose shards of the
+// closed by the eyelid blink (SparkyPlayer::setClosedFrame): BLINK f3 (loose shards of the
 // eyes above the lids) -> f2's eyes, lids nearly shut.
 struct ClosedFrameFix { AnimId anim; uint8_t frame, from; uint16_t open; };
 static const ClosedFrameFix CLOSED_FRAME_FIXES[] = { { ANIM_BLINK, 3, 2, 40 } };
@@ -74,7 +74,7 @@ enum ExprId : uint8_t {
   E_NONE = 0xFF
 };
 
-// Expressions whose face is far from Mochi's usual one: Mochi gets there (and comes back)
+// Expressions whose face is far from Sparky's usual one: Sparky gets there (and comes back)
 // through a waypoint face, briefly shown, so the change happens gradually like a real face.
 //   SOB: first the eyes well up (TEARY), then the sobbing; afterwards back through TEARY.
 //   GLOOM: its clip starts on the calm face and drifts into gloom by itself; afterwards the
@@ -108,7 +108,7 @@ static const Expression EXPRESSIONS[E_COUNT] = {
   // calm / idle / sleepy
   { "CALM",       ANIM_HAPPY,       0, 30, T_IDLE,                          1, R_NONE, 10 },   // f31-63 almost still, f64: sudden shift
   { "BLINK",      ANIM_BLINK,       0, LAST, T_SLEEPY,                      1, R_NONE, 10 },
-  { "GLANCE",     ANIM_MOCHI_10,    0, LAST, T_IDLE | T_CURIOUS,            1, R_NONE, 6 },
+  { "GLANCE",     ANIM_SPARKY_10,   0, LAST, T_IDLE | T_CURIOUS,            1, R_NONE, 6 },
   { "LOOKAROUND", ANIM_RELAXED,    24, 74, T_IDLE | T_CURIOUS,              1, R_NONE, 4 },
   { "BORED",      ANIM_ANGRY,      14, 40, T_SLEEPY | T_IDLE,               1, R_NONE, 6 },   // f13: one-frame swollen in-between
   { "DROOP",      ANIM_SLEEPY_3,    0, 2,  T_SLEEPY,                        2, R_NONE, 10 },
@@ -130,7 +130,7 @@ static const Expression EXPRESSIONS[E_COUNT] = {
   { "EVIL_GRIN",  ANIM_EVIL_GRIN,   1, LAST, T_MISCHIEF | T_PLAYFUL,      3, R_MISCHIEF, 10 },   // f0: sparse fade-in frame
   { "EVIL",       ANIM_EVIL,        0, 3,  T_MISCHIEF | T_ANGRY,        3, R_SPITE, 10 },   // f4-5: dissolve into a different clip of the montage
   // curious
-  { "PEEK",       ANIM_MOCHI_11,    0, LAST, T_CURIOUS,                     1, R_NONE, 6 },    // a mild look too (3rd mild-curious face since SWEAT is gone)
+  { "PEEK",       ANIM_SPARKY_11,   0, LAST, T_CURIOUS,                     1, R_NONE, 6 },    // a mild look too (3rd mild-curious face since SWEAT is gone)
   { "WINCE",      ANIM_CONFUSED_2,  0, 38, T_CURIOUS | T_OVERSTIM,        2, R_NONE, 10 },
   { "GLITCH",     ANIM_BUG,         0, LAST, T_CURIOUS,                     3, R_GLITCH, 10 },
   // surprise / excitement
@@ -141,7 +141,7 @@ static const Expression EXPRESSIONS[E_COUNT] = {
   { "DIZZY",      ANIM_DIZZY,       0, LAST, T_OVERSTIM | T_EXCITED,        3, R_DIZZY, 10 },
   // annoyed / angry
   { "DEADPAN",    ANIM_FRUSTRATED, 35, 51, T_ANNOYED,                     1, R_NONE, 10 },   // f34 / f52-53: eyes closing / opening
-  { "WORRIED",    ANIM_MOCHI_29,    0, LAST, T_ANNOYED | T_SAD,           1, R_NONE, 10 },
+  { "WORRIED",    ANIM_SPARKY_29,   0, LAST, T_ANNOYED | T_SAD,           1, R_NONE, 10 },
   { "SQUINT",     ANIM_SQUINT,      0, LAST, T_ANNOYED | T_SLEEPY,        1, R_NONE, 10 },
   { "ANNOYED",    ANIM_ANNOYED,     0, 6,  T_ANNOYED,                       2, R_NONE, 10 },   // f7: dissolve frame of the source video
   { "SQUEEZE",    ANIM_DETERMINED,  0, 22, T_ANNOYED | T_OVERSTIM,        2, R_NONE, 10 },   // f23-26: eyes already sliding up (held mid-motion)

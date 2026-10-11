@@ -1,24 +1,24 @@
 // =====================================================
-// MOCHI BEHAVIOR — a small character that feels something and shows it
+// SPARKY BEHAVIOR — a small character that feels something and shows it
 //
-//   EVENT ─► FEELINGS ─► MOOD ─► INTENT ─► EXPRESSION ─► sequence ─► MochiPlayer ─► MochiMorph
+//   EVENT ─► FEELINGS ─► MOOD ─► INTENT ─► EXPRESSION ─► sequence ─► SparkyPlayer ─► SparkyMorph
 //
 // EVENT: button 1 (affection / pet), button 2 (poke / tease), repeated and rapid
 //   presses, and time passing (quiet, boredom, tiredness).
-// FEELINGS (MochiEmotion.h): happiness, affection, playfulness, annoyance,
+// FEELINGS (SparkyEmotion.h): happiness, affection, playfulness, annoyance,
 //   curiosity, energy, excitement and a grudge. Events move them; they drift back
 //   over seconds to minutes.
 // MOOD: derived from the feelings, with inertia: at least MOOD_MIN_DWELL_MS in a
 //   mood, and a new mood must clearly win. Every change is logged with its reason.
 // INTENT: react to a press (context ladders: affection grows, annoyance escalates),
 //   a short episode of related expressions, a single expression, or a calm moment.
-// EXPRESSION (MochiExpressions.h): an animation or segment whose tags fit the
+// EXPRESSION (SparkyExpressions.h): an animation or segment whose tags fit the
 //   intent; randomness only chooses among fitting ones (70% the mood, 20% a
 //   neighbouring mood, 10% calm), avoiding repeats, with the starvation boost.
 //   Special moments (FURIOUS, SCREAM, CRYING, EVIL...) need their condition.
 // Animations chain: short pause on the last frame, or a calm moment on the mood's
 // resting face (with blinks), then a smooth morph into the next expression.
-// When tired and left alone Mochi gets sleepy, then falls asleep (the OLED stays on).
+// When tired and left alone Sparky gets sleepy, then falls asleep (the OLED stays on).
 // After 5-15 minutes it wakes up on its own, slowly and groggily; a button wakes it at
 // once. Every decision is logged with a reason code.
 // =====================================================
@@ -27,14 +27,14 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "MochiPlayer.h"
-#include "MochiEmotion.h"
-#include "MochiExpressions.h"
+#include "SparkyPlayer.h"
+#include "SparkyEmotion.h"
+#include "SparkyExpressions.h"
 
-#define MOCHI_COUNT(a) (sizeof(a) / sizeof((a)[0]))
+#define SPARKY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
 // ---- Time ----
-#ifdef MOCHI_FAST_TIMING
+#ifdef SPARKY_FAST_TIMING
 static const uint32_t TIME_SCALE = 5;    // HARDWARE TEST ONLY: feelings and moods change 5x faster
 #else
 static const uint32_t TIME_SCALE = 1;
@@ -70,7 +70,7 @@ static const uint16_t EYELID_TWICE_MS     = 380;        // eyelid double blink: 
 static const uint16_t SWAY_STEP_MS        = 90;         // a resting face without eyelids: frame by frame ...
 static const uint16_t SWAY_HOLD_MS        = 220;        // ... out to its sway frame, a moment there, and back
 
-// ---- Transitions: universal expression morph (MochiMorph.h) ----
+// ---- Transitions: universal expression morph (SparkyMorph.h) ----
 static const uint16_t MORPH_MIN_MS        = 120;  // autonomous switches: 120..220 ms
 static const uint16_t MORPH_MAX_MS        = 220;
 static const uint16_t MORPH_REACT_MS      = 105;  // button reactions: quick morph (2 in-between frames), starts at once
@@ -80,7 +80,7 @@ static const uint16_t EYES_OPEN_BOOT_MS   = 220;  // closed eyes at boot, then t
 static const uint8_t  CONTRAST_AWAKE      = 0xCF; // SSD1306 brightness, set once at boot (also asleep)
 
 // ---- Sleeping ----
-// Falling asleep: SLEEPY_3 closes its eyes (frames 0 -> 1 -> 2). Asleep, Mochi drifts
+// Falling asleep: SLEEPY_3 closes its eyes (frames 0 -> 1 -> 2). Asleep, Sparky drifts
 // between three closed-eye faces of existing animations (light, deep, deepest sleep) and
 // breathes: a slow partial morph toward a nearby closed-eye frame and back, never all the
 // way, with varied depth and timing; now and then a tiny twitch or a deeper sigh. The eyes
@@ -119,7 +119,7 @@ static const uint8_t  GROGGY_FRAME        = 20;
 
 // ---- Flow between actions ----
 // After an action the next one usually follows after a short pause (the last frame
-// stays); sometimes Mochi rests on its mood's face first. Both vary per mood a little.
+// stays); sometimes Sparky rests on its mood's face first. Both vary per mood a little.
 struct MoodFlow {
   uint8_t restPct;              // chance of a resting moment instead of chaining on
   uint16_t pauseMin, pauseMax;  // short pause before the next animation (ms)
@@ -153,7 +153,7 @@ static const uint16_t MOOD_NEIGHBORS[MOOD_COUNT] = {
   T_SLEEPY | T_IDLE,                        // SAD
   T_IDLE | T_SAD,                           // SLEEPY
   T_HAPPY | T_PLAYFUL };                    // AFFECTIONATE
-// Feelings a mood does not show while idle (an annoyed Mochi does not smile idly, a
+// Feelings a mood does not show while idle (an annoyed Sparky does not smile idly, a
 // happy one does not look teary); reactions and lingering feelings are not limited
 static const uint16_t MOOD_FORBID[MOOD_COUNT] = {
   T_ANGRY,                                  // NEUTRAL
@@ -179,7 +179,7 @@ static const StarveStep STARVE_BOOST[] = {
   { 30UL * 60 * 1000, 220 }, { 20UL * 60 * 1000, 160 }, { 10UL * 60 * 1000, 125 } };   // else 100%
 
 // ---- Resting faces: still frames of existing animations, two per mood ----
-// blink: BLINK_EYELID: the eyelids of the face itself close and open (MochiPlayer::blink,
+// blink: BLINK_EYELID: the eyelids of the face itself close and open (SparkyPlayer::blink,
 //        a morph of the image on screen: no cut);
 //        BLINK_FRAME: the clip's own closed-eye frame (blinkAnim, blinkFrame) briefly;
 //        BLINK_SWAY: no eyelids (outlined eyes, brows): the clip's own frames step out to a
@@ -208,7 +208,7 @@ static const Pose POSES[MOOD_COUNT][2] = {
   { { ANIM_HAPPY_3, 0, EYELID },                    { ANIM_HAPPY_2, 20, BLINK_FRAME, ANIM_HAPPY_2, 18 } }, // PLAYFUL
   { { ANIM_SURPRISED, 3, EYELID },                  { ANIM_ANGRY_2, 25, BLINK_SWAY, ANIM_ANGRY_2, 29 } }, // EXCITED
   { { ANIM_ANNOYED, 3, BLINK_SWAY, ANIM_ANNOYED, 6 }, { ANIM_FRUSTRATED, 45, BLINK_FRAME, ANIM_FRUSTRATED, 52 } }, // ANNOYED
-  { { ANIM_MOCHI_29, 4, BLINK_SWAY, ANIM_MOCHI_29, 7 }, { ANIM_EXCITED_2, 40, EYELID } },                 // SAD (worried, gloomy)
+  { { ANIM_SPARKY_29, 4, BLINK_SWAY, ANIM_SPARKY_29, 7 }, { ANIM_EXCITED_2, 40, EYELID } },                 // SAD (worried, gloomy)
   { { ANIM_FRUSTRATED, 45, BLINK_FRAME, ANIM_FRUSTRATED, 52 }, { ANIM_ANGRY, 20, EYELID } },            // SLEEPY
   { { ANIM_LOVE, 20, BLINK_SWAY, ANIM_LOVE, 23 },   { ANIM_UWU, 0, BLINK_FRAME, ANIM_UWU, 1 } },          // AFFECTIONATE
 };
@@ -240,20 +240,20 @@ static const Rung OVERSTIM_PET = { { E_SHY, E_WINCE, E_DIZZY }, 3 };
 static const Rung OVERSTIM_POKE = { { E_SQUEEZE, E_WINCE, E_SHOCK, E_DIZZY }, 4 };
 
 
-class MochiBehavior {
+class SparkyBehavior {
 public:
   enum State : uint8_t { IDLE, ACTING, FALLING_ASLEEP, ASLEEP, WAKING, WAKING_NATURALLY };
 
   typedef uint32_t (*RandFn)(uint32_t n);                          // 0 .. n-1
   typedef void (*LogFn)(const char* event, const char* detail);
 
-  MochiBehavior(MochiPlayer& player, RandFn rand, LogFn log = nullptr)
+  SparkyBehavior(SparkyPlayer& player, RandFn rand, LogFn log = nullptr)
     : player_(player), rand_(rand), log_(log) {}
 
   // verbose: also log animation starts/ends, pauses, rests, blinks and feelings
   void setVerbose(bool v) { verbose_ = v; }
 
-  // Boot: a personality and first feelings; Mochi opens its eyes into its first expression
+  // Boot: a personality and first feelings; Sparky opens its eyes into its first expression
   void begin(uint32_t now) {
     now_ = now;
     for (uint8_t i = 0; i < ANIM_COUNT; i++) lastPlayed_[i] = now;   // starvation counts from boot
@@ -312,7 +312,7 @@ public:
 
     if (state_ != IDLE) {                    // a sequence is playing
       if (stepBusy(now)) return;
-      if (stepIsAnim_) logv("ANIMATION END", MOCHI_ANIMS[player_.current()].name);
+      if (stepIsAnim_) logv("ANIMATION END", SPARKY_ANIMS[player_.current()].name);
       stepIsAnim_ = false;
       if (seqPos_ < seqLen_) {
         startStep(now);
@@ -358,7 +358,7 @@ public:
   }
 
   // Back on screen after something else had it (Gallery Mode; update() was not called
-  // meanwhile): Mochi's last image is shown again and everything carries on from where it
+  // meanwhile): Sparky's last image is shown again and everything carries on from where it
   // was (mood, feelings, sequence, sleep). The time away was spent with the user, so it
   // does not count as being alone (no falling asleep at once, no "long time no see").
   void resume(uint32_t now) {
@@ -388,13 +388,13 @@ public:
     pressTimes_[pressHead_] = now;           // remember recent presses (either button)
     pressHead_ = (pressHead_ + 1) % PRESS_HISTORY;
 
-    groggyUntil_ = now;                      // a press wakes Mochi up properly
+    groggyUntil_ = now;                      // a press wakes Sparky up properly
     if (state_ == ASLEEP || state_ == FALLING_ASLEEP || state_ == WAKING_NATURALLY) {
       wake(button, now);                     // the press wins over waking up slowly
       return;
     }
     if ((int32_t)(stopUntil_ - now) > 0) {   // still upset after "STOP!"
-      MochiEmotion::add(emo_.annoy, 30, 0, 1000);
+      SparkyEmotion::add(emo_.annoy, 30, 0, 1000);
       log("STOP_COOLDOWN", "still upset: press noted, no reaction");
       return;
     }
@@ -426,7 +426,7 @@ public:
       else if (idleBefore >= GREETING_IDLE_MS) { e = pickRung(GREETING); why = "GREETING"; b1Streak_ = 1; }
       else {
         uint8_t step = b1Streak_ + (mood_ == AFFECTIONATE ? 1 : 0);
-        uint8_t n = MOCHI_COUNT(AFFECTION_LADDER);
+        uint8_t n = SPARKY_COUNT(AFFECTION_LADDER);
         e = pickRung(AFFECTION_LADDER[(step > n ? n : step) - 1]);
         why = "BUTTON1_AFFECTION";
       }
@@ -448,11 +448,11 @@ public:
   Mood mood() const { return mood_; }
   State state() const { return state_; }
   const Pose& pose() const { return POSES[mood_][pose_]; }
-  // The resting face on screen: chosen when Mochi went to rest (a mood change during the
+  // The resting face on screen: chosen when Sparky went to rest (a mood change during the
   // rest must not make the blink act on a different face)
   const Pose& restFace() const { return restPose_ ? *restPose_ : pose(); }
   uint32_t morphs() const { return morphs_; }      // expression morphs started
-  const MochiEmotion& feelingsState() const { return emo_; }
+  const SparkyEmotion& feelingsState() const { return emo_; }
   ExprId lastExpression() const { return exprHist_[(exprHead_ + EXPR_HISTORY - 1) % EXPR_HISTORY]; }
 
 private:
@@ -480,7 +480,7 @@ private:
   // Closed eyes in the art style of an animation (full-screen 250frames clips / emote GIFs)
   static ClosedEyes closedFor(AnimId id) {
     ClosedEyes gif = { ANIM_RELAXED, 32 }, clip = { ANIM_BLINK, 3 };
-    return MOCHI_ANIMS[id].packed ? gif : clip;
+    return SPARKY_ANIMS[id].packed ? gif : clip;
   }
 
   // ---- Feelings over time, and the mood they lead to ----
@@ -557,39 +557,39 @@ private:
   }
 
   void pressFeelings(uint8_t button, bool play, int16_t annoyBefore, uint8_t rapid) {
-    MochiEmotion& f = emo_;
+    SparkyEmotion& f = emo_;
     if (button == 0) {                       // affection: warmer, forgives, a bit less each time in a row
       uint8_t s = b1Streak_ > 6 ? 6 : b1Streak_;
       int16_t gain = (int16_t)(120 - 15 * (s - 1));
       if (annoyBefore >= 400) gain /= 2;     // still a little cross
-      MochiEmotion::add(f.happy, gain, -1000, 1000);
-      MochiEmotion::add(f.affection, 40, 0, 1000);
-      MochiEmotion::add(f.annoy, -220, 0, 1000);
-      MochiEmotion::add(f.playful, 30, 0, 1000);
+      SparkyEmotion::add(f.happy, gain, -1000, 1000);
+      SparkyEmotion::add(f.affection, 40, 0, 1000);
+      SparkyEmotion::add(f.annoy, -220, 0, 1000);
+      SparkyEmotion::add(f.playful, 30, 0, 1000);
     } else if (play) {                       // a tease while in a good mood: a game
-      MochiEmotion::add(f.playful, 220, 0, 1000);
-      MochiEmotion::add(f.happy, 40, -1000, 1000);
-      MochiEmotion::add(f.annoy, 40, 0, 1000);
+      SparkyEmotion::add(f.playful, 220, 0, 1000);
+      SparkyEmotion::add(f.happy, 40, -1000, 1000);
+      SparkyEmotion::add(f.annoy, 40, 0, 1000);
     } else {                                 // a poke: annoying, a bit more in a row or with a grudge
       uint8_t s = b2Streak_ > 5 ? 5 : b2Streak_;
-      MochiEmotion::add(f.annoy, (int16_t)(100 + 15 * (s - 1) + f.grudge / 10), 0, 1000);
-      MochiEmotion::add(f.happy, -70, -1000, 1000);
-      MochiEmotion::add(f.playful, -100, 0, 1000);
+      SparkyEmotion::add(f.annoy, (int16_t)(100 + 15 * (s - 1) + f.grudge / 10), 0, 1000);
+      SparkyEmotion::add(f.happy, -70, -1000, 1000);
+      SparkyEmotion::add(f.playful, -100, 0, 1000);
     }
-    MochiEmotion::add(f.curious, -200, 0, 1000);
-    MochiEmotion::add(f.excite, (int16_t)(button == 0 ? 120 : 150), 0, 1000);
-    MochiEmotion::add(f.energy, 20, 0, 1000);
+    SparkyEmotion::add(f.curious, -200, 0, 1000);
+    SparkyEmotion::add(f.excite, (int16_t)(button == 0 ? 120 : 150), 0, 1000);
+    SparkyEmotion::add(f.energy, 20, 0, 1000);
     if (rapid >= RAPID_OVERSTIM) {           // too much at once
-      MochiEmotion::add(f.excite, 150, 0, 1000);
-      MochiEmotion::add(f.annoy, 60, 0, 1000);
+      SparkyEmotion::add(f.excite, 150, 0, 1000);
+      SparkyEmotion::add(f.annoy, 60, 0, 1000);
     }
   }
 
   // "STOP!": shock, a scream (the extreme reaction), then tears; presses are ignored a moment
   void meltdown(uint32_t now) {
-    MochiEmotion& f = emo_;
-    MochiEmotion::add(f.annoy, 250, 0, 1000);
-    MochiEmotion::add(f.happy, -300, -1000, 1000);
+    SparkyEmotion& f = emo_;
+    SparkyEmotion::add(f.annoy, 250, 0, 1000);
+    SparkyEmotion::add(f.happy, -300, -1000, 1000);
     f.excite = 1000;
     f.playful = 0;
     snprintf(text_, sizeof(text_), "too many presses: STOP! | %s", feelings());
@@ -667,7 +667,7 @@ private:
   // Log a decision: why, which expression, and the feelings behind it
   void decision(const char* why, ExprId e) {
     const Expression& x = EXPRESSIONS[e];
-    snprintf(text_, sizeof(text_), "%s (%s) | %s %u%% | %s", x.name, MOCHI_ANIMS[x.anim].name,
+    snprintf(text_, sizeof(text_), "%s (%s) | %s %u%% | %s", x.name, SPARKY_ANIMS[x.anim].name,
              MOOD_NAMES[mood_], (unsigned)intensity(), feelings());
     log(why, text_);
   }
@@ -722,10 +722,10 @@ private:
       return;
     }
     if (s.frame == MORPH) {                  // expression morph (s.loops = target frame)
-      uint8_t steps = MochiPlayer::morphSteps(s.ms >= 300 ? 8 : 4, s.ms);   // slow ones (sleep, wake): smoother
+      uint8_t steps = SparkyPlayer::morphSteps(s.ms >= 300 ? 8 : 4, s.ms);   // slow ones (sleep, wake): smoother
       morphs_++;
       if (verbose_) {
-        snprintf(text_, sizeof(text_), "-> %s f%u in %u ms (%u frames)", MOCHI_ANIMS[s.id].name,
+        snprintf(text_, sizeof(text_), "-> %s f%u in %u ms (%u frames)", SPARKY_ANIMS[s.id].name,
                  (unsigned)s.loops, (unsigned)s.ms, (unsigned)steps);
         logv("MORPH", text_);
       }
@@ -745,8 +745,8 @@ private:
     stepIsAnim_ = true;
     stillUntil_ = now;
     if (verbose_) {
-      snprintf(text_, sizeof(text_), "%s f%u-%u (%s)", MOCHI_ANIMS[s.id].name, (unsigned)s.from,
-               (unsigned)(s.to == 0xFF ? MOCHI_ANIMS[s.id].frameCount - 1 : s.to),
+      snprintf(text_, sizeof(text_), "%s f%u-%u (%s)", SPARKY_ANIMS[s.id].name, (unsigned)s.from,
+               (unsigned)(s.to == 0xFF ? SPARKY_ANIMS[s.id].frameCount - 1 : s.to),
                s.expr != E_NONE ? EXPRESSIONS[s.expr].name : stepWhy_);
       logv("ANIMATION START", text_);
     }
@@ -794,13 +794,13 @@ private:
     uint32_t ms = natural(f.pauseMin, f.pauseMax);
     nextAction_ = now + ms;
     if (verbose_) {
-      snprintf(text_, sizeof(text_), "%u ms on %s f%u", (unsigned)ms, MOCHI_ANIMS[player_.current()].name,
+      snprintf(text_, sizeof(text_), "%u ms on %s f%u", (unsigned)ms, SPARKY_ANIMS[player_.current()].name,
                (unsigned)player_.frameIndex());
       logv("PAUSE", text_);
     }
   }
 
-  // What does Mochi want to express now?
+  // What does Sparky want to express now?
   //  - continue an episode (related expressions: build up, peak, settle)
   //  - after a mood change: a short episode that bridges the old mood to the new one
   //  - sometimes start an episode of the mood (more likely when it is felt strongly)
@@ -937,7 +937,7 @@ private:
   // Special moments only when their feeling is really there (and not too often)
   bool rareOk(RareKind k) const {
     if (now_ - lastRare_[k] < RARE_COOLDOWN_MS) return false;
-    const MochiEmotion& f = emo_;
+    const SparkyEmotion& f = emo_;
     switch (k) {
       case R_FURIOUS:  return f.annoy >= 850;
       case R_SCREAM:   return f.excite >= 800 && f.annoy >= 600;
@@ -999,7 +999,7 @@ private:
     resting_ = true;
     if (!restMs_) return;
     if (verbose_) {
-      snprintf(text_, sizeof(text_), "%s f%u for %u ms", MOCHI_ANIMS[p.anim].name, (unsigned)p.frame, (unsigned)restMs_);
+      snprintf(text_, sizeof(text_), "%s f%u for %u ms", SPARKY_ANIMS[p.anim].name, (unsigned)p.frame, (unsigned)restMs_);
       logv("REST", text_);
     }
     if (p.blink == BLINK_NONE && restMs_ > REST_STILL_MAX_MS) restMs_ = REST_STILL_MAX_MS;   // no blink: not long still
@@ -1016,7 +1016,7 @@ private:
     lastBlink_ = now;
     nextBlink_ = now + range(BLINK_MIN_MS, BLINK_MAX_MS);
     if (p.blink == BLINK_NONE) return;
-    if (p.blink == BLINK_EYELID) {           // the face's own eyelids; Mochi stays resting
+    if (p.blink == BLINK_EYELID) {           // the face's own eyelids; Sparky stays resting
       if (!player_.blink(now)) return;
       log("BLINK", "eyelids");
       if (twice) {                           // the second one right after this one
@@ -1032,7 +1032,7 @@ private:
       for (int16_t f = p.frame + dir; f != p.blinkFrame; f += dir) queueStill(p.anim, (uint8_t)f, SWAY_STEP_MS);
       queueStill(p.anim, p.blinkFrame, SWAY_HOLD_MS);
       for (int16_t f = p.blinkFrame - dir; f != p.frame; f -= dir) queueStill(p.anim, (uint8_t)f, SWAY_STEP_MS);
-      logv("SWAY", MOCHI_ANIMS[p.anim].name);
+      logv("SWAY", SPARKY_ANIMS[p.anim].name);
       run("SWAY", 0, now);
       returning_ = true;
       return;
@@ -1048,7 +1048,7 @@ private:
   }
 
   // ---- Sleep / wake ----
-  // Time alone counts from the last press, or from waking up on its own (so Mochi does not
+  // Time alone counts from the last press, or from waking up on its own (so Sparky does not
   // fall straight back asleep after a natural wake)
   uint32_t awakeRef() const { return (int32_t)(wokeAt_ - lastInteraction_) > 0 ? wokeAt_ : lastInteraction_; }
 
@@ -1174,7 +1174,7 @@ private:
     queueMorph(EXPRESSIONS[E_YAWN].anim, EXPRESSIONS[E_YAWN].from, 400);   // a yawn
     queueExpr(E_YAWN, 1);
     queueMorph(GROGGY_ANIM, GROGGY_FRAME, 700);          // heavy-lidded, still groggy
-    MochiEmotion::add(emo_.happy, 60, -1000, 1000);      // rested, a little content
+    SparkyEmotion::add(emo_.happy, 60, -1000, 1000);      // rested, a little content
     emo_.excite = 60;
     int16_t rested = (int16_t)natural(700, 1000);        // not always equally rested
     if (emo_.energy > rested) emo_.energy = rested;
@@ -1196,10 +1196,10 @@ private:
   void wake(uint8_t button, uint32_t now) {
     breathLanding_ = false;
     sleepPhase_ = SP_REST;
-    MochiEmotion::add(emo_.excite, 400, 0, 1000);
-    MochiEmotion::add(emo_.energy, 100, 0, 1000);
-    if (button == 1) MochiEmotion::add(emo_.annoy, 150, 0, 1000);
-    else MochiEmotion::add(emo_.happy, 100, -1000, 1000);
+    SparkyEmotion::add(emo_.excite, 400, 0, 1000);
+    SparkyEmotion::add(emo_.energy, 100, 0, 1000);
+    if (button == 1) SparkyEmotion::add(emo_.annoy, 150, 0, 1000);
+    else SparkyEmotion::add(emo_.happy, 100, -1000, 1000);
     b1Streak_ = b2Streak_ = 0;
     episodeLeft_ = 0;
     moodChanged_ = false;
@@ -1250,7 +1250,7 @@ private:
   // ---- Helpers ----
   uint8_t loopsFor(ExprId e) {
     const Expression& x = EXPRESSIONS[e];
-    uint16_t to = x.to == LAST ? MOCHI_ANIMS[x.anim].frameCount - 1 : x.to;
+    uint16_t to = x.to == LAST ? SPARKY_ANIMS[x.anim].frameCount - 1 : x.to;
     uint16_t len = to - x.from + 1;
     for (uint8_t i = 0; i < sizeof(PLAY_ONCE) / sizeof(PLAY_ONCE[0]); i++)
       if (PLAY_ONCE[i] == e) return 1;
@@ -1281,7 +1281,7 @@ private:
     if (verbose_ && log_) log_(event, detail);
   }
 
-  MochiPlayer& player_;
+  SparkyPlayer& player_;
   RandFn rand_;
   LogFn log_;
   bool verbose_ = false;
@@ -1289,7 +1289,7 @@ private:
   char feel_[56];
 
   State state_ = IDLE;
-  MochiEmotion emo_;
+  SparkyEmotion emo_;
   Mood mood_ = NEUTRAL, prevMood_ = NEUTRAL;
   uint32_t moodSince_ = 0;
   bool moodChanged_ = false;             // the next action bridges into the new mood
@@ -1315,7 +1315,7 @@ private:
   uint8_t b1Streak_ = 0, b2Streak_ = 0;
   uint32_t stillUntil_ = 0;
   uint32_t nextBreath_ = 0, sleepDepthUntil_ = 0;
-  uint32_t wakeAt_ = 0, sleptAt_ = 0;    // asleep: when Mochi wakes up on its own / fell asleep
+  uint32_t wakeAt_ = 0, sleptAt_ = 0;    // asleep: when Sparky wakes up on its own / fell asleep
   uint32_t wokeAt_ = 0;                  // when it last woke up on its own (time alone counts from here)
   uint32_t groggyUntil_ = 0;             // after waking up on its own: calm and sleepy until then
   enum SleepPhase : uint8_t { SP_REST, SP_IN, SP_TWITCH };

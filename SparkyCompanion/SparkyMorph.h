@@ -1,5 +1,5 @@
 // =====================================================
-// MOCHI MORPH — universal expression morph between any two 128x64 frames
+// SPARKY MORPH — universal expression morph between any two 128x64 frames
 //
 // Works on what is on screen (1 = lit pixel, 16 bytes per row, MSB = left), so it
 // handles every pair of the 35 animations, resting faces and even a half-finished
@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 
-class MochiMorph {
+class SparkyMorph {
 public:
   static const int16_t W = 128, H = 64, N = W * H;
   enum Part : uint8_t { P_NONE = 0, P_LEFT, P_RIGHT, P_MOUTH, P_SPECIAL, P_COUNT };
@@ -347,7 +347,7 @@ private:
 
   // Draw the pixels of `region` whose field value is among the `target` lowest
   void cut(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint32_t target, uint8_t* out,
-           int16_t (*field)(MochiMorph*, int16_t, int16_t), int16_t lo, int16_t hi) {
+           int16_t (*field)(SparkyMorph*, int16_t, int16_t), int16_t lo, int16_t hi) {
     if (target == 0) return;
     if (x0 < 0) x0 = 0;
     if (y0 < 0) y0 = 0;
@@ -379,7 +379,7 @@ private:
     cut(x0, y0, x1, y1, target, out, &blendField, -HIST_HALF, HIST_HALF - 1);
   }
 
-  static int16_t blendField(MochiMorph* m, int16_t x, int16_t y) {
+  static int16_t blendField(SparkyMorph* m, int16_t x, int16_t y) {
     int32_t a = sample(*m->fa_, x + m->dax_, y + m->day_);
     int32_t b = sample(*m->fb_, x + m->dbx_, y + m->dby_);
     return (int16_t)((a * (256 - m->t_) + b * m->t_) >> 8);
@@ -392,7 +392,7 @@ private:
     cut(Q.x0, Q.y0, Q.x1, Q.y1, target, out, &oneField, -HIST_HALF, 0);
   }
 
-  static int16_t oneField(MochiMorph* m, int16_t x, int16_t y) { return sample(*m->fa_, x, y); }
+  static int16_t oneField(SparkyMorph* m, int16_t x, int16_t y) { return sample(*m->fa_, x, y); }
 
   static int16_t min16(int16_t a, int16_t b) { return a < b ? a : b; }
   static int16_t max16(int16_t a, int16_t b) { return a > b ? a : b; }

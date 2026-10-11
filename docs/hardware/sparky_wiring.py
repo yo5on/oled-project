@@ -1,8 +1,8 @@
-"""Generate docs/hardware/mochi-wiring.svg, the Mochi wiring diagram.
+"""Generate docs/hardware/sparky-wiring.svg, the Sparky wiring diagram.
 
-    python docs/hardware/mochi_wiring.py
+    python docs/hardware/sparky_wiring.py
 
-Every pin here comes from MochiCompanion/MochiCompanion.ino:
+Every pin here comes from SparkyCompanion/SparkyCompanion.ino:
     BTN_1 25, BTN_2 26 (INPUT_PULLUP, pressed = LOW, "to GND")
     OLED_SDA 22, OLED_SCL 21 (Wire.begin(OLED_SDA, OLED_SCL)), OLED_ADDR 0x3C, no reset pin (-1)
 The OLED supply (VCC -> 3V3, GND -> GND) is not visible in code; it comes from the project's
@@ -10,7 +10,7 @@ hardware docs and is drawn dashed. Change the firmware first, then this file, ne
 
 PNG export (same folder), e.g. with Microsoft Edge:
     msedge --headless --disable-gpu --force-device-scale-factor=2 --window-size=1000,910
-           --screenshot=mochi-wiring.png mochi-wiring.svg
+           --screenshot=sparky-wiring.png sparky-wiring.svg
 """
 import os
 
@@ -44,7 +44,7 @@ def pin_stub(x0, x1, y): add(f'<line x1="{x0}" y1="{y}" x2="{x1}" y2="{y}" strok
 
 add(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="{FONT}">')
 add(f'<rect width="{W}" height="{H}" fill="#ffffff"/>')
-text(W / 2, 52, "Mochi OLED Companion — Wiring Diagram", 28, "middle", "bold")
+text(W / 2, 52, "Sparky OLED Companion — Wiring Diagram", 28, "middle", "bold")
 text(W / 2, 84, "ESP32 Dev Module · SSD1306 128×64 OLED over I2C (address 0x3C) · two push buttons", 16, "middle", fill=MUTED)
 
 # ---- ESP32 ----
@@ -111,14 +111,14 @@ for i, (k, s) in enumerate(items):
     add(f'<line x1="{x}" y1="{LY + 25}" x2="{x + 36}" y2="{LY + 25}" stroke="{C[k]}" stroke-width="5" stroke-linecap="round"/>')
     text(x + 44, LY + 30, s, 14)
 add(f'<line x1="60" y1="{LY + 62}" x2="96" y2="{LY + 62}" stroke="{INK}" stroke-width="4"/>')
-text(104, LY + 67, "solid: pin taken from the firmware (MochiCompanion.ino)", 14)
+text(104, LY + 67, "solid: pin taken from the firmware (SparkyCompanion.ino)", 14)
 add(f'<line x1="530" y1="{LY + 62}" x2="566" y2="{LY + 62}" stroke="{INK}" stroke-width="4" stroke-dasharray="10 7"/>')
 text(574, LY + 67, "dashed: from project docs, not checkable in code", 14)
 text(60, LY + 100, "Not verified: OLED supply voltage (3V3 per project docs) · ESP32 power source · OLED header pin order", 14, fill=MUTED)
 text(60, LY + 118, "(varies by module: wire by pin name) · I2C pull-up resistors on the OLED module (common, not confirmed)", 14, fill=MUTED)
 
 add("</svg>")
-path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mochi-wiring.svg")
+path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sparky-wiring.svg")
 with open(path, "w", encoding="utf-8", newline="\n") as f:
     f.write("\n".join(out) + "\n")
 print("wrote", path)

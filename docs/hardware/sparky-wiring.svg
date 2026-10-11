@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1000" height="910" viewBox="0 0 1000 910" font-family="Segoe UI, Helvetica, Arial, sans-serif">
 <rect width="1000" height="910" fill="#ffffff"/>
-<text x="500.0" y="52" font-size="28" text-anchor="middle" font-weight="bold" fill="#1d232b" >Mochi OLED Companion — Wiring Diagram</text>
+<text x="500.0" y="52" font-size="28" text-anchor="middle" font-weight="bold" fill="#1d232b" >Sparky OLED Companion — Wiring Diagram</text>
 <text x="500.0" y="84" font-size="16" text-anchor="middle" font-weight="normal" fill="#5b6573" >ESP32 Dev Module · SSD1306 128×64 OLED over I2C (address 0x3C) · two push buttons</text>
 <rect x="60" y="120" width="270" height="565" rx="16" fill="#e8eef6" stroke="#7d8ea3" stroke-width="2.5"/>
 <text x="80" y="155" font-size="20" text-anchor="start" font-weight="bold" fill="#1d232b" >ESP32 Dev Module</text>
@@ -90,7 +90,7 @@
 <line x1="840" y1="785" x2="876" y2="785" stroke="#8a3ffc" stroke-width="5" stroke-linecap="round"/>
 <text x="884" y="790" font-size="14" text-anchor="start" font-weight="normal" fill="#1d232b" >Button 2</text>
 <line x1="60" y1="822" x2="96" y2="822" stroke="#1d232b" stroke-width="4"/>
-<text x="104" y="827" font-size="14" text-anchor="start" font-weight="normal" fill="#1d232b" >solid: pin taken from the firmware (MochiCompanion.ino)</text>
+<text x="104" y="827" font-size="14" text-anchor="start" font-weight="normal" fill="#1d232b" >solid: pin taken from the firmware (SparkyCompanion.ino)</text>
 <line x1="530" y1="822" x2="566" y2="822" stroke="#1d232b" stroke-width="4" stroke-dasharray="10 7"/>
 <text x="574" y="827" font-size="14" text-anchor="start" font-weight="normal" fill="#1d232b" >dashed: from project docs, not checkable in code</text>
 <text x="60" y="860" font-size="14" text-anchor="start" font-weight="normal" fill="#5b6573" >Not verified: OLED supply voltage (3V3 per project docs) · ESP32 power source · OLED header pin order</text>

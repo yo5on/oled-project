@@ -1,8 +1,8 @@
 // =====================================================
-// MOCHI EMOTION — what Mochi feels, and how it changes over time
+// SPARKY EMOTION — what Sparky feels, and how it changes over time
 //
 // A few feelings (0..1000, happiness -1000..1000) rise and fall with events (button
-// presses, see MochiBehavior::onButton) and drift back toward Mochi's own resting
+// presses, see SparkyBehavior::onButton) and drift back toward Sparky's own resting
 // levels as time passes. Nothing here is random: a small personality, chosen once at
 // boot, only sets those resting levels.
 // The mood is derived from the feelings (score(): the strongest one wins); the
@@ -30,7 +30,7 @@ static const char* const MOOD_NAMES[MOOD_COUNT] = {
   "NEUTRAL", "HAPPY", "CURIOUS", "PLAYFUL", "EXCITED", "ANNOYED", "SAD", "SLEEPY", "AFFECTIONATE"
 };
 
-// Resting levels that make one Mochi a little different from another (set at boot)
+// Resting levels that make one Sparky a little different from another (set at boot)
 struct Personality {
   int16_t happy;      // cheerful .. gloomy
   int16_t affection;  // cuddly .. aloof
@@ -38,7 +38,7 @@ struct Personality {
   int16_t curious;
 };
 
-struct MochiEmotion {
+struct SparkyEmotion {
   int16_t happy = 200;       // -1000 .. 1000
   int16_t affection = 400;   // bond with the person; slow
   int16_t playful = 100;
@@ -61,7 +61,7 @@ struct MochiEmotion {
       toward(grudge, 0, 3);
       return;
     }
-    // left alone for long, Mochi feels a little neglected (more when attached)
+    // left alone for long, Sparky feels a little neglected (more when attached)
     int16_t hRest = p.happy;
     if (idleS > 300) {
       int32_t drop = (int32_t)(idleS - 300) * (affection >= 500 ? 2 : 1);
@@ -72,7 +72,7 @@ struct MochiEmotion {
     toward(playful, p.playful, 8);                            // ~1.5 min
     toward(annoy, 0, 17);                                     // ~40 s
     toward(grudge, annoy > grudge ? annoy : 0, annoy > grudge ? 1000 : 3);   // holds the peak, fades over minutes
-    // quiet makes Mochi curious (1.5-7 min; less when it is very happy), then boredom takes over
+    // quiet makes Sparky curious (1.5-7 min; less when it is very happy), then boredom takes over
     int16_t cRest = idleS < 90 ? p.curious : idleS < 420 ? (int16_t)(happy > 350 ? 450 : 650) : 250;
     toward(curious, cRest, 8);
     toward(excite, 100, 35);                                  // ~20 s
