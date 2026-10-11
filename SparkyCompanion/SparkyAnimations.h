@@ -1,5 +1,5 @@
 // =====================================================
-// MOCHI ANIMATIONS — the 34 Mochi animations in use
+// SPARKY ANIMATIONS — the 34 Sparky animations in use
 //
 // Same data and frame ranges as the ESP32_Mochi player:
 //  - 19 clips of 250frames.gif: raw 1024-byte frames inside the one
@@ -30,9 +30,9 @@
 #include "animations/sleepy_3.h"
 
 enum AnimId : uint8_t {
-  ANIM_SMILE, ANIM_ANNOYED, ANIM_FURIOUS, ANIM_EVIL, ANIM_MOCHI_10, ANIM_MOCHI_11,
+  ANIM_SMILE, ANIM_ANNOYED, ANIM_FURIOUS, ANIM_EVIL, ANIM_SPARKY_10, ANIM_SPARKY_11,
   ANIM_BUG, ANIM_SCREAM, ANIM_EVIL_GRIN, ANIM_ANGRY_3, ANIM_SQUINT, ANIM_BLINK,
-  ANIM_HAPPY_3, ANIM_MOCHI_29, ANIM_SURPRISED,
+  ANIM_HAPPY_3, ANIM_SPARKY_29, ANIM_SURPRISED,
   ANIM_UWU, ANIM_CRYING, ANIM_HAPPY, ANIM_HAPPY_2, ANIM_ANGRY, ANIM_ANGRY_2,
   ANIM_DIZZY, ANIM_KISS, ANIM_CONFUSED_2, ANIM_DETERMINED, ANIM_CONTENT,
   ANIM_EMBARRASSED, ANIM_EXCITED_2, ANIM_FRUSTRATED, ANIM_LAUGH, ANIM_LOVE,
@@ -40,7 +40,7 @@ enum AnimId : uint8_t {
   ANIM_COUNT
 };
 
-struct MochiAnim {
+struct SparkyAnim {
   const char* name;
   const uint8_t* data;
   uint16_t startFrame;     // RAW only: first frame inside data (PACKED: always 0)
@@ -53,13 +53,13 @@ struct MochiAnim {
 #define INTRO intro_trimmed_frames[0]
 
 // Indexed by AnimId (same order)
-static const MochiAnim MOCHI_ANIMS[ANIM_COUNT] = {
+static const SparkyAnim SPARKY_ANIMS[ANIM_COUNT] = {
   { "SMILE",       INTRO,   0,  4, 15, false, true },   //  #3  GIF frames  17-20
   { "ANNOYED",     INTRO,   4,  8, 15, false, true },   //  #4  GIF frames  21-28
   { "FURIOUS",     INTRO,  12,  7, 15, false, true },   //  #5  GIF frames  29-35
   { "EVIL",        INTRO,  26,  6, 15, false, true },   //  #8  GIF frames  51-56
-  { "MOCHI_10",    INTRO,  32,  8, 15, false, true },   // #10  GIF frames  65-72
-  { "MOCHI_11",    INTRO,  40,  6, 15, false, true },   // #11  GIF frames  73-78
+  { "SPARKY_10",   INTRO,  32,  8, 15, false, true },   // #10  GIF frames  65-72
+  { "SPARKY_11",   INTRO,  40,  6, 15, false, true },   // #11  GIF frames  73-78
   { "BUG",         INTRO,  46, 14, 15, false, true },   // #14  GIF frames  94-107
   { "SCREAM",      INTRO,  67,  7, 15, false, true },   // #17  GIF frames 123-129
   { "EVIL_GRIN",   INTRO,  74,  8, 15, false, true },   // #18  GIF frames 130-137
@@ -67,7 +67,7 @@ static const MochiAnim MOCHI_ANIMS[ANIM_COUNT] = {
   { "SQUINT",      INTRO,  96,  7, 15, false, true },   // #24  GIF frames 174-180
   { "BLINK",       INTRO, 103,  7, 15, false, true },   // #25  GIF frames 181-187
   { "HAPPY_3",     INTRO, 125,  7, 15, false, true },   // #28  GIF frames 203-209
-  { "MOCHI_29",    INTRO, 132,  8, 15, false, true },   // #29  GIF frames 210-217
+  { "SPARKY_29",   INTRO, 132,  8, 15, false, true },   // #29  GIF frames 210-217
   { "SURPRISED",   INTRO, 140,  7, 15, false, true },   // #30  GIF frames 218-224
   { "UWU",         INTRO,  60,  7, 15, false, true },   // #16  GIF frames 116-122
   { "CRYING",      INTRO,  19,  7, 15, false, true },   //  #7  GIF frames  44-50

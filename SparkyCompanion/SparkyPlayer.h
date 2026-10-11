@@ -1,24 +1,24 @@
 // =====================================================
-// MOCHI PLAYER — plays one MochiAnim at a time, non-blocking
+// SPARKY PLAYER — plays one SparkyAnim at a time, non-blocking
 //
 // The behavior engine only calls play(), hold(), morphTo(), blink(), busy() and update().
 // Frame data stays in flash: RAW frames are drawn straight from flash,
 // PACKED frames are decoded one at a time into a single 1024-byte buffer.
-// morphTo() morphs from exactly what is on screen to any frame (MochiMorph.h); its
+// morphTo() morphs from exactly what is on screen to any frame (SparkyMorph.h); its
 // in-between frames are scheduled from the morph's start, never faster than the OLED
 // can show them. blink() closes and opens the eyes of what is on screen.
-// The screen is behind MochiScreen (OLED on the ESP32).
+// The screen is behind SparkyScreen (OLED on the ESP32).
 // =====================================================
 
 #pragma once
 
 #include <stdint.h>
 #include <string.h>
-#include "MochiAnimations.h"
-#include "MochiMorph.h"
+#include "SparkyAnimations.h"
+#include "SparkyMorph.h"
 
 // What the player needs from a display
-class MochiScreen {
+class SparkyScreen {
 public:
   // A complete 128x64 frame (1024 bytes); inverted: show it with every pixel flipped
   virtual void showFrame(const uint8_t* frame, bool inverted) = 0;
@@ -47,14 +47,14 @@ static const uint8_t  BRIDGE_MAX_MID  = 4;               // in-betweens of the c
 struct BlinkStep { uint16_t open, ms; };
 static const BlinkStep BLINK_STEPS[4] = { { 100, 35 }, { 0, 90 }, { 100, 35 }, { 256, 0 } };
 
-class MochiPlayer {
+class SparkyPlayer {
 public:
-  explicit MochiPlayer(MochiScreen& screen) : screen_(screen) {}
+  explicit SparkyPlayer(SparkyScreen& screen) : screen_(screen) {}
 
   // Start an animation now; it plays `loops` times, then stays on its last frame.
   // from/to: play only that part of it (an expression segment); to past the end = last frame.
   void play(AnimId id, uint8_t loops, uint32_t now, uint16_t from = 0, uint16_t to = 0xFFFF) {
-    const MochiAnim& a = MOCHI_ANIMS[id];
+    const SparkyAnim& a = SPARKY_ANIMS[id];
     anim_ = id;
     loopsLeft_ = loops ? loops : 1;
     playing_ = true;
@@ -67,7 +67,7 @@ public:
 
   // Show one still frame of an animation (no playback)
   void hold(AnimId id, uint16_t frame) {
-    const MochiAnim& a = MOCHI_ANIMS[id];
+    const SparkyAnim& a = SPARKY_ANIMS[id];
     anim_ = id;
     playing_ = false;
     frameIdx_ = frame < a.frameCount ? frame : a.frameCount - 1;
@@ -90,7 +90,7 @@ public:
   // depth < 256: only part of the way (a breath): steps k = 1..steps show the morph at
   // depth * k / steps, the last one at now + ms, and that partial image stays on screen.
   void morphTo(AnimId id, uint16_t frame, uint8_t steps, uint16_t ms, uint32_t now, uint16_t depth = 256) {
-    const MochiAnim& a = MOCHI_ANIMS[id];
+    const SparkyAnim& a = SPARKY_ANIMS[id];
     if (frame >= a.frameCount) frame = a.frameCount - 1;
     const uint8_t* src = this->frame(a, frame);
     for (uint16_t i = 0; i < 1024; i++) target_[i] = a.inverted ? (uint8_t)~pgm_read_byte(src + i) : pgm_read_byte(src + i);
@@ -160,7 +160,7 @@ public:
       }
       return;
     }
-    const MochiAnim& a = MOCHI_ANIMS[anim_];
+    const SparkyAnim& a = SPARKY_ANIMS[anim_];
     if (now - lastFrameMs_ < 1000UL / a.fps) return;
     lastFrameMs_ = now;
     if (frameIdx_ < segTo_) {
@@ -178,7 +178,7 @@ public:
   AnimId current() const { return anim_; }
   uint16_t frameIndex() const { return frameIdx_; }
 
-  MochiScreen& screen() { return screen_; }
+  SparkyScreen& screen() { return screen_; }
 
   // Show again exactly what the player last put on screen (after something else used
   // the screen, e.g. Gallery Mode); nothing about playback changes
@@ -201,7 +201,7 @@ public:
 
 
   // Show frame `frame` of `id` as the eyes of frame `from` (same animation) closed to
-  // `open` (MochiMorph::blinkFrame, 0 = shut .. 256 = as drawn): for a broken closed-eye
+  // `open` (SparkyMorph::blinkFrame, 0 = shut .. 256 = as drawn): for a broken closed-eye
   // frame of the source video. The stored frame is not changed. Up to 4.
   void setClosedFrame(AnimId id, uint8_t frame, uint8_t from, uint16_t open) {
     if (nFixes_ < 4) fixes_[nFixes_++] = { id, frame, from, open };
@@ -209,7 +209,7 @@ public:
 
 private:
   void showCurrent() {
-    const MochiAnim& a = MOCHI_ANIMS[anim_];
+    const SparkyAnim& a = SPARKY_ANIMS[anim_];
     if (closedFrame(anim_, frameIdx_, shown_)) {   // a replaced closed-eye frame
       screen_.showFrame(shown_, false);
       morphing_ = false;
@@ -285,7 +285,7 @@ private:
     if (!ok) memcpy(out, target_, 1024);
   }
 
-  // MochiMorph eases every full morph (smoothstep): on its own, the first and the last
+  // SparkyMorph eases every full morph (smoothstep): on its own, the first and the last
   // in-between frame hardly differ from the start / end image (the face seems to wait,
   // then jump). Step k of n is placed so the face is half-way between an even and an eased
   // progress: still soft at both ends, but every in-between frame moves the face.
@@ -296,7 +296,7 @@ private:
     while (lo < hi) { uint16_t mid = (lo + hi) / 2; if (easedT(mid) < want) lo = mid + 1; else hi = mid; }
     return lo;
   }
-  static uint16_t easedT(uint16_t t) { uint32_t x = t; return (uint16_t)((x * x * (768 - 2 * x)) >> 16); }   // = MochiMorph's smoothstep
+  static uint16_t easedT(uint16_t t) { uint32_t x = t; return (uint16_t)((x * x * (768 - 2 * x)) >> 16); }   // = SparkyMorph's smoothstep
 
   // Frame idx of id as replaced by setClosedFrame (displayed pixels into out); false: not
   // replaced (or the source frame has no eyes to close)
@@ -304,7 +304,7 @@ private:
     for (uint8_t k = 0; k < nFixes_; k++) {
       const ClosedFix& c = fixes_[k];
       if (c.anim != id || c.frame != idx) continue;
-      const MochiAnim& a = MOCHI_ANIMS[id];
+      const SparkyAnim& a = SPARKY_ANIMS[id];
       const uint8_t* f = frame(a, c.from);
       for (uint16_t i = 0; i < 1024; i++) cleanBuf_[i] = a.inverted ? (uint8_t)~pgm_read_byte(f + i) : pgm_read_byte(f + i);
       if (processed(id)) process(id, cleanBuf_, out);
@@ -367,7 +367,7 @@ private:
   }
 
   // Pointer to frame `idx` of animation `a`
-  const uint8_t* frame(const MochiAnim& a, uint16_t idx) {
+  const uint8_t* frame(const SparkyAnim& a, uint16_t idx) {
     if (!a.packed) return a.data + (uint32_t)(a.startFrame + idx) * 1024;
 
     // PACKED: frames can only be decoded in order, so rewind when needed
@@ -402,7 +402,7 @@ private:
     return src;
   }
 
-  MochiScreen& screen_;
+  SparkyScreen& screen_;
   AnimId anim_ = ANIM_BLINK;
   bool playing_ = false;
   uint8_t loopsLeft_ = 0;
@@ -422,14 +422,14 @@ private:
   struct ClosedFix { AnimId anim; uint8_t frame, from; uint16_t open; };
   ClosedFix fixes_[4];                       // replaced closed-eye frames (setClosedFrame)
   uint8_t nFixes_ = 0;
-  MochiMorph morph_;
+  SparkyMorph morph_;
   bool morphing_ = false, blinking_ = false;
   uint8_t bStep_ = 0;
   uint8_t mStep_ = 0, mSteps_ = 0;
   uint16_t mMs_ = 1;
   uint16_t mDepth_ = 256;                    // 256: a full morph; less: a partial one (breathing)
   uint32_t mStart_ = 0;
-  const MochiAnim* decodedAnim_ = nullptr;
+  const SparkyAnim* decodedAnim_ = nullptr;
   const uint8_t* packedPos_ = nullptr;
   int16_t decodedIdx_ = -1;
 };

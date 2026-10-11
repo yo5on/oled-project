@@ -1,12 +1,12 @@
 // =====================================================
-// MOCHI GALLERY — the V3 photo / video viewer as a separate mode
+// SPARKY GALLERY — the V3 photo / video viewer as a separate mode
 //
 // Media are the V3 gallery's own data, unchanged: 128x64 1-bit frames of 1024 bytes
 // (16 bytes per row, MSB = left pixel, 1 = lit), stored in flash. A photo is one frame
 // and stays until navigation; a video plays its frames at its own frame time and starts
-// again at the end (as in V3) until another item is chosen. Nothing here touches Mochi's
-// animations or player: the gallery draws through the same MochiScreen only while it is
-// active, and the sketch hands the screen back to Mochi when it is left.
+// again at the end (as in V3) until another item is chosen. Nothing here touches Sparky's
+// animations or player: the gallery draws through the same SparkyScreen only while it is
+// active, and the sketch hands the screen back to Sparky when it is left.
 //
 // The media list comes from gallery_media_private.h (generated locally from V3 by
 // tools/make_gallery.py, never committed) or, when that file does not exist, from
@@ -16,7 +16,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "MochiPlayer.h"                     // MochiScreen
+#include "SparkyPlayer.h"                     // SparkyScreen
 
 struct GalleryItem {
   const uint8_t* const* frames;              // frameCount frames of 1024 bytes
@@ -31,11 +31,11 @@ struct GalleryItem {
 #include "gallery_placeholder.h"             // public build: no private media
 #endif
 
-class MochiGallery {
+class SparkyGallery {
 public:
   static const uint32_t NAV_GAP_MS = 200;    // V3: shortest time between two navigations
 
-  explicit MochiGallery(MochiScreen& screen) : screen_(screen) {}
+  explicit SparkyGallery(SparkyScreen& screen) : screen_(screen) {}
 
   static uint16_t count() { return GALLERY_ITEM_COUNT; }
   bool active() const { return active_; }
@@ -82,7 +82,7 @@ private:
     screen_.showFrame(item().frames[0], false);
   }
 
-  MochiScreen& screen_;
+  SparkyScreen& screen_;
   bool active_ = false;
   uint16_t index_ = 0, frame_ = 0;
   uint32_t lastFrameMs_ = 0, lastNav_ = 0;

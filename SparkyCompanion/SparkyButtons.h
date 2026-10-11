@@ -1,5 +1,5 @@
 // =====================================================
-// MOCHI BUTTONS — two buttons, single presses and "both together"
+// SPARKY BUTTONS — two buttons, single presses and "both together"
 //
 // Same scheme as the V3 media viewer: a press is debounced (contact bounce), then it
 // waits a short combo window before it counts as a single press, so pressing both
@@ -15,7 +15,7 @@
 // Scoped names: the sketch's pin macros (BTN_1 / BTN_2) can never replace them
 enum class ButtonEvent : uint8_t { None, Button1, Button2, Both };
 
-class MochiButtons {
+class SparkyButtons {
 public:
   static const uint32_t STABLE_MS = 30;      // contact-bounce filter
   static const uint32_t COMBO_MS  = 150;     // time to press the second button for BOTH (>= 110 ms apart
