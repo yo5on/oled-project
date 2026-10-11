@@ -37,36 +37,64 @@ The repository also keeps the earlier **OLED Eye Animation** sketch, a procedura
 - **Natural and manual wake.** It wakes on its own after a while, or right away when you press a button.
 - **Gallery Mode.** Browse photos and play looping videos, then go straight back to Mochi.
 
-## Hardware
+## Hardware and Wiring
+
+<p align="center"><a href="docs/hardware/mochi-wiring.svg"><img src="docs/hardware/mochi-wiring.png" width="900" alt="Mochi OLED Companion wiring diagram: ESP32 Dev Module, SSD1306 OLED on GPIO 22 (SDA) and GPIO 21 (SCL), Button 1 on GPIO 25 and Button 2 on GPIO 26 to GND"/></a></p>
+
+<div align="center"><sub>Click for the full-resolution SVG. Solid wires come straight from the pin definitions in <code>MochiCompanion.ino</code>; dashed wires come from the project's hardware notes.</sub></div>
+
+### Parts
 
 | Part | Notes |
 |---|---|
-| ESP32 Dev Module | Arduino core for ESP32 2.0.17 |
-| SSD1306 OLED, 128×64, I2C | address `0x3C` |
-| 2 × push buttons | to GND, internal pull-ups |
+| ESP32 Dev Module | board selected for the build; Arduino core for ESP32 2.0.17 |
+| SSD1306 OLED, 128×64, I2C | address `0x3C`, no reset pin used |
+| 2 × momentary push buttons | each between its GPIO and GND |
 
-### Wiring
+No external resistors or other parts are needed for the firmware to work.
 
-| From | To |
-|---|---|
-| OLED VCC | 3V3 |
-| OLED GND | GND |
-| OLED SDA | GPIO 22 |
-| OLED SCL | GPIO 21 |
-| Button 1 | GPIO 25 → GND |
-| Button 2 | GPIO 26 → GND |
+### Connections
 
-### OLED / display
+| Component | Component pin/signal | ESP32 GPIO or power | Notes |
+|---|---|---|---|
+| SSD1306 OLED | VCC | 3V3 | from the project's hardware notes, not checkable in code |
+| SSD1306 OLED | GND | GND | common ground with the ESP32 |
+| SSD1306 OLED | SDA | GPIO 22 | `OLED_SDA 22`, `Wire.begin(OLED_SDA, OLED_SCL)` |
+| SSD1306 OLED | SCL | GPIO 21 | `OLED_SCL 21` |
+| Button 1 | leg 1 | GPIO 25 | `BTN_1 25`, `INPUT_PULLUP` |
+| Button 1 | leg 2 | GND | pressed = `LOW` |
+| Button 2 | leg 1 | GPIO 26 | `BTN_2 26`, `INPUT_PULLUP` |
+| Button 2 | leg 2 | GND | pressed = `LOW` |
 
-The display runs over I2C with `Wire.begin(22, 21)`. Note that SDA and SCL are deliberately on 22 and 21. Every frame is a full 128×64, 1-bit image (1024 bytes) pushed in one transfer, about 29 ms per frame on the ESP32. Some source clips are stored black-on-white, and the player inverts them in software so every face appears as light on dark.
+Each GPIO has exactly one job: 21 and 22 for I2C, and 25 and 26 for the buttons. None of them is a boot-strapping pin. The same pinout is used by the earlier V3 viewer and the `OLED_Eye_Animation` sketch.
 
-### ESP32
+### Power
 
-The animations live in flash as raw or PackBits-compressed frames, and RAM use stays around 105 KB. The public build fits the default partition. The build with your own gallery media needs **Huge APP**, and the sketch stops with a clear compile error if you forget.
+The OLED is powered from the ESP32's **3V3** pin, so its I2C lines run at the ESP32's 3.3 V logic level. All grounds (ESP32, OLED and both buttons) are common. Don't feed the OLED from 5 V unless you have confirmed that your module's I2C pull-ups go to its own regulated 3.3 V.
+
+### OLED interface
+
+The display is an SSD1306 on I2C at address `0x3C`, started with `display.begin(SSD1306_SWITCHCAPVCC, 0x3C)`. Its internal charge pump makes the panel voltage, so only VCC and GND are needed. **SDA and SCL are deliberately swapped** compared with the ESP32's usual defaults: SDA is on GPIO 22 and SCL on GPIO 21. Wire them exactly as shown. No reset line is connected (`-1` in the driver).
+
+Every frame is a full 128×64, 1-bit image (1024 bytes) pushed in one transfer, about 29 ms per frame. Some source clips are stored black-on-white, and the player inverts them in software so every face appears as light on dark.
 
 ### Buttons
 
-Both buttons use `INPUT_PULLUP`, so a press reads `LOW`. Inputs are debounced (30 ms), and a press of both buttons counts as a combo when they land within 150 ms of each other. A combo fires once and waits until both buttons are released, so it never leaks into single presses.
+Each button connects its GPIO to GND. The firmware enables the ESP32's internal pull-ups (`INPUT_PULLUP`), so a button reads `HIGH` when released and `LOW` when pressed, and no external resistors are needed. Inputs are debounced (30 ms). Pressing both buttons within 150 ms of each other counts as a combo. A combo fires once and then waits until both buttons are released, so it never leaks into single presses.
+
+### ESP32 memory
+
+The animations live in flash as raw or PackBits-compressed frames, and RAM use stays around 105 KB. The public build fits the default partition. The build with your own gallery media needs **Huge APP**, and the sketch stops with a clear compile error if you forget.
+
+### Still to check on the real hardware
+
+These can't be confirmed from the code or the repository:
+
+- **OLED supply voltage.** 3V3 comes from the project's hardware notes. Check your module's rating; most SSD1306 breakouts accept 3.3–5 V.
+- **ESP32 power source.** The diagram assumes USB, which is also used for upload and the serial monitor.
+- **OLED header pin order.** It varies between modules (often GND, VCC, SCL, SDA), so wire by the printed pin names, not by position.
+- **I2C pull-ups.** These are expected on the OLED module, as on most breakouts, but not confirmed. The firmware doesn't enable any for I2C.
+- **Exact dev board.** The board model and the physical position of each pin on its headers depend on your board. Find the pins by their GPIO label.
 
 ## Mochi expression system
 
@@ -225,6 +253,7 @@ oled-project/
 │   └── EyeVariants.h
 ├── docs/
 │   ├── mochi/                      Animation previews
+│   ├── hardware/                   Wiring diagram (SVG, PNG and its generator script)
 │   └── eyes/                       Robot-eye previews
 └── archive/
     └── esp32-eyes-main/            Old reference code, not compiled
