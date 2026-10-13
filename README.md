@@ -1,7 +1,4 @@
 <div align="center">
-
-<img src="https://raw.githubusercontent.com/yo5on/yo5on/main/hd-projects.svg" width="620" alt="projects"/>
-
 <samp><b>SPARKY · OLED COMPANION</b></samp>
 
 <samp>esp32 · ssd1306 · arduino · embedded animation</samp>
