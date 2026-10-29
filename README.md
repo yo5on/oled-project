@@ -15,7 +15,7 @@
 
 ---
 
-## Overview
+<h2 align="center"><samp><b>Overview</b></samp></h2>
 
 Sparky is an ESP32 sketch that turns a small SSD1306 OLED into a character with a life of its own. You don't pick animations from a menu. Sparky chooses its own faces based on how it feels, and the two buttons are ways to interact with it: a friendly tap, a poke, or pestering it until it gets cross.
 
@@ -23,7 +23,7 @@ Both buttons together open **Gallery Mode**, which plays photos and short videos
 
 The repository also keeps the earlier **OLED Eye Animation** sketch, a procedurally drawn robot face, as a separate working project.
 
-## Features
+<h2 align="center"><samp><b>Features</b></samp></h2>
 
 - **Expressive faces.** 40 expressions built from 34 Sparky animations: happy, sad, angry, excited, funny and dramatic.
 - **Smooth morphs.** Every change of face is morphed shape by shape. Nothing jumps straight to the next picture.
@@ -34,7 +34,7 @@ The repository also keeps the earlier **OLED Eye Animation** sketch, a procedura
 - **Natural and manual wake.** It wakes on its own after a while, or right away when you press a button.
 - **Gallery Mode.** Browse photos and play looping videos, then go straight back to Sparky.
 
-## Hardware and Wiring
+<h2 align="center"><samp><b>Hardware and Wiring</b></samp></h2>
 
 <p align="center"><a href="docs/hardware/sparky-wiring.svg"><img src="docs/hardware/sparky-wiring.png" width="900" alt="Sparky OLED Companion wiring diagram: ESP32 Dev Module, SSD1306 OLED on GPIO 22 (SDA) and GPIO 21 (SCL), Button 1 on GPIO 25 and Button 2 on GPIO 26 to GND"/></a></p>
 
@@ -93,7 +93,7 @@ These can't be confirmed from the code or the repository:
 - **I2C pull-ups.** These are expected on the OLED module, as on most breakouts, but not confirmed. The firmware doesn't enable any for I2C.
 - **Exact dev board.** The board model and the physical position of each pin on its headers depend on your board. Find the pins by their GPIO label.
 
-## Sparky expression system
+<h2 align="center"><samp><b>Sparky expression system</b></samp></h2>
 
 Every expression is a named slice of an animation, such as `SMILE`, `GLOOM`, `FURIOUS` or `HEARTS`. Each one carries:
 
@@ -104,7 +104,7 @@ Every expression is a named slice of an animation, such as `SMILE`, `GLOOM`, `FU
 
 Sparky doesn't repeat itself much: recently used faces are less likely, and no single animation dominates a long session. Some expressions play once and settle, like a blink, a glance or a beam. Others loop for a moment before moving on.
 
-## Natural expression transitions
+<h2 align="center"><samp><b>Natural expression transitions</b></samp></h2>
 
 Switching faces is where an OLED character usually looks cheap, so most of the work went here.
 
@@ -114,7 +114,7 @@ Switching faces is where an OLED character usually looks cheap, so most of the w
 - **Waypoints.** A few dramatic faces, like sobbing and gloom, pass through an in-between pose on the way in or out, so they ease in instead of popping.
 - **Button reactions** start from whatever is on screen at that moment, even mid-morph.
 
-## Personality and behaviour
+<h2 align="center"><samp><b>Personality and behaviour</b></samp></h2>
 
 Sparky's behaviour runs as a small pipeline:
 
@@ -127,14 +127,14 @@ feelings  →  mood  →  intent  →  expression
 - **Intent** decides what to do next: chain another expression, pause briefly, or rest on the mood's face.
 - **Resting faces** aren't frozen. They blink, sway slightly or play their own idle frames.
 
-## Sleep, breathing and natural wake
+<h2 align="center"><samp><b>Sleep, breathing and natural wake</b></samp></h2>
 
 - **Falling asleep.** When Sparky is low on energy and has been left alone for a few minutes, its eyes get heavy and close in stages. It always falls asleep eventually if nobody plays with it.
 - **Breathing.** While asleep, the closed eyes slowly swell and settle. It drifts between light, deep and deepest sleep, and every so often gives a tiny twitch or a deeper sigh. The eyes never open during sleep.
 - **Natural wake.** After 5–15 minutes Sparky wakes by itself between two breaths: the lids lift slowly, it gives a slow blink and a yawn, and it stays groggy for a while before getting back to normal.
 - **Manual wake.** Press a button and Sparky wakes immediately, a little startled.
 
-## Button interactions
+<h2 align="center"><samp><b>Button interactions</b></samp></h2>
 
 | Input | Sparky | Gallery Mode |
 |---|---|---|
@@ -145,7 +145,7 @@ feelings  →  mood  →  intent  →  expression
 
 Sparky's reaction depends on its mood. A sleepy Sparky blinks at you, and a happy one beams. Keep pestering it and it climbs a ladder from deadpan to annoyed to furious.
 
-## Gallery Mode
+<h2 align="center"><samp><b>Gallery Mode</b></samp></h2>
 
 Gallery Mode is a small photo and video viewer for the same screen, reusing the media from the earlier V3 viewer sketch.
 
@@ -166,7 +166,7 @@ This writes `SparkyCompanion/gallery_media_private.h`. It is listed in `.gitigno
 
 > Build with **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** when the private media header is present.
 
-## Animation system
+<h2 align="center"><samp><b>Animation system</b></samp></h2>
 
 Two frame formats share one player:
 
@@ -177,7 +177,7 @@ Two frame formats share one player:
 
 The player (`SparkyPlayer.h`) plays, holds and morphs frames, and the morph engine (`SparkyMorph.h`) works on the parts of a face rather than on raw pixels. All timing is non-blocking with `millis()`, so the buttons stay responsive during every animation and morph.
 
-## Animation cleanup and quality improvements
+<h2 align="center"><samp><b>Animation cleanup and quality improvements</b></samp></h2>
 
 The original frames were extracted from video and had small defects that look bad on a crisp OLED. These are fixed at playback time, and the stored animation data is unchanged:
 
@@ -187,7 +187,7 @@ The original frames were extracted from video and had small defects that look ba
 - **Range tuning.** Each expression starts and ends on a clean frame, so morphs begin from a sensible face.
 - **Removed clip.** One animation (clip 26 of the source recording) was dropped completely because it couldn't be made to look right.
 
-## Animation Preview
+<h2 align="center"><samp><b>Animation Preview</b></samp></h2>
 
 <div align="center"><samp>Recorded from the firmware's own frames and timing (expression → morph → expression), rendered in the blue-white OLED look.</samp></div>
 
@@ -211,7 +211,7 @@ The original frames were extracted from video and had small defects that look ba
 </tr>
 </table>
 
-## Build and upload
+<h2 align="center"><samp><b>Build and upload</b></samp></h2>
 
 1. Install **Arduino IDE** and add **esp32 by Espressif Systems** (2.0.17) in Boards Manager.
 2. Install **Adafruit SSD1306** from Library Manager and accept its dependencies (Adafruit GFX, Adafruit BusIO).
@@ -228,7 +228,7 @@ The original frames were extracted from video and had small defects that look ba
 
 `SPARKY_HW_TEST` at the top of the sketch switches to fast timings for bench testing: moods change in seconds, Sparky sleeps after 2 minutes, and serial keys act as buttons.
 
-## Project structure
+<h2 align="center"><samp><b>Project structure</b></samp></h2>
 
 ```text
 oled-project/
@@ -262,13 +262,13 @@ The earlier sketch draws 11 robot-eye emotions live from one curved eye shape, w
 
 <p align="center"><img src="docs/eyes/eye-mode-preview.gif" width="380" alt="Robot eye emotions"/></p>
 
-## Archive
+<h2 align="center"><samp><b>Archive</b></samp></h2>
 
 `archive/` keeps code that is no longer part of any build but is worth keeping for reference and history:
 
 - **`archive/esp32-eyes-main/`** is the [esp32-eyes](https://github.com/playfultechnology/esp32-eyes) source that an early version of the robot-eye sketch was based on. It is kept with its original AGPL-3.0 license.
 
-## Credits
+<h2 align="center"><samp><b>Credits</b></samp></h2>
 
 - **Animation artwork.** Sparky's face animations come from the *Dasai Mochi* emotes, via the [huykhong](https://www.tiktok.com/@_huykhong) ESP32 Mochi clone and gif2cpp. All rights to the original character and artwork belong to their creators.
 - **Robot-eye style** was inspired by a design made with [OLED Animation Maker](https://www.oledanimationmaker.com/). The `EyeVariants.h` implementation is original.
@@ -279,8 +279,8 @@ The earlier sketch draws 11 robot-eye emotions live from one curved eye shape, w
 
 ---
 
-<samp><strong>Yoson</strong> · embedded systems, robotics and hardware projects</samp>
+<samp><strong>Yoson</strong> · software, AI/ML, embedded systems and robotics</samp>
 
-<samp><a href="https://github.com/yo5on">github.com/yo5on</a></samp>
+<samp><a href="https://github.com/yo5on">github.com/yo5on</a> · <a href="https://www.linkedin.com/in/yo5on">LinkedIn</a></samp>
 
 </div>
