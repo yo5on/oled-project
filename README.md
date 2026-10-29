@@ -40,7 +40,7 @@
 
 <div align="center"><sub>Click for the full-resolution SVG. Solid wires come straight from the pin definitions in <code>SparkyCompanion.ino</code>; dashed wires come from the project's hardware notes.</sub></div>
 
-<h4 align="center"><samp><b>Parts</b></samp></h4>
+<h3 align="center"><samp><b>Parts</b></samp></h3>
 
 | <samp>Part</samp> | Notes |
 |---|---|
@@ -50,7 +50,7 @@
 
 <samp>No external resistors or other parts are needed for the firmware to work.</samp>
 
-<h4 align="center"><samp><b>Connections</b></samp></h4>
+<h3 align="center"><samp><b>Connections</b></samp></h3>
 
 | <samp>Component</samp> | Component pin/signal | <samp>ESP32 GPIO or power</samp> | Notes |
 |---|---|---|---|
@@ -65,25 +65,25 @@
 
 <samp>Each GPIO has exactly one job: 21 and 22 for I2C, and 25 and 26 for the buttons. None of them is a boot-strapping pin. The same pinout is used by the earlier V3 viewer and the `OLED_Eye_Animation` sketch.</samp>
 
-<h4 align="center"><samp><b>Power</b></samp></h4>
+<h3 align="center"><samp><b>Power</b></samp></h3>
 
 <samp>The OLED is powered from the ESP32's **3V3** pin, so its I2C lines run at the ESP32's 3.3 V logic level. All grounds (ESP32, OLED and both buttons) are common. Don't feed the OLED from 5 V unless you have confirmed that your module's I2C pull-ups go to its own regulated 3.3 V.</samp>
 
-<h4 align="center"><samp><b>OLED interface</b></samp></h4>
+<h3 align="center"><samp><b>OLED interface</b></samp></h3>
 
 <samp>The display is an SSD1306 on I2C at address `0x3C`, started with `display.begin(SSD1306_SWITCHCAPVCC, 0x3C)`. Its internal charge pump makes the panel voltage, so only VCC and GND are needed. **SDA and SCL are deliberately swapped** compared with the ESP32's usual defaults: SDA is on GPIO 22 and SCL on GPIO 21. Wire them exactly as shown. No reset line is connected (`-1` in the driver).</samp>
 
 <samp>Every frame is a full 128×64, 1-bit image (1024 bytes) pushed in one transfer, about 29 ms per frame. Some source clips are stored black-on-white, and the player inverts them in software so every face appears as light on dark.</samp>
 
-<h4 align="center"><samp><b>Buttons</b></samp></h4>
+<h3 align="center"><samp><b>Buttons</b></samp></h3>
 
 <samp>Each button connects its GPIO to GND. The firmware enables the ESP32's internal pull-ups (`INPUT_PULLUP`), so a button reads `HIGH` when released and `LOW` when pressed, and no external resistors are needed. Inputs are debounced (30 ms). Pressing both buttons within 150 ms of each other counts as a combo. A combo fires once and then waits until both buttons are released, so it never leaks into single presses.</samp>
 
-<h4 align="center"><samp><b>ESP32 memory</b></samp></h4>
+<h3 align="center"><samp><b>ESP32 memory</b></samp></h3>
 
 <samp>The animations live in flash as raw or PackBits-compressed frames, and RAM use stays around 105 KB. The public build fits the default partition. The build with your own gallery media needs **Huge APP**, and the sketch stops with a clear compile error if you forget.</samp>
 
-<h4 align="center"><samp><b>Still to check on the real hardware</b></samp></h4>
+<h3 align="center"><samp><b>Still to check on the real hardware</b></samp></h3>
 
 <samp>These can't be confirmed from the code or the repository:</samp>
 
@@ -154,7 +154,7 @@ feelings  →  mood  →  intent  →  expression
 - <samp>Button 1 and button 2 move backwards and forwards with wrap-around.</samp>
 - <samp>Leaving the gallery returns Sparky exactly as it was: same face, same mood. The button press that closed the gallery doesn't count as poking Sparky.</samp>
 
-<h4 align="center"><samp><b>Using your own media</b></samp></h4>
+<h3 align="center"><samp><b>Using your own media</b></samp></h3>
 
 <samp>The media is never stored in this repository. It's generated locally into a git-ignored header:</samp>
 
@@ -256,7 +256,7 @@ oled-project/
     └── esp32-eyes-main/            Old reference code, not compiled
 ```
 
-<h4 align="center"><samp><b>OLED Eye Animation</b></samp></h4>
+<h3 align="center"><samp><b>OLED Eye Animation</b></samp></h3>
 
 <samp>The earlier sketch draws 11 robot-eye emotions live from one curved eye shape, with no bitmaps, and has its own media slots and button reactions. Open `OLED_Eye_Animation/OLED_Eye_Animation.ino` to use it.</samp>
 
