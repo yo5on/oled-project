@@ -287,10 +287,27 @@ void playContent() {
       display.clearDisplay();
       display.setTextSize(1);
       display.setTextColor(SSD1306_WHITE);
-      display.setCursor(0, 24);
-      display.print("Slot ");
+      display.setTextWrap(false);
+
+      // A small, legible empty-state card; keep the full-screen eye animations untouched.
+      display.drawRoundRect(4, 4, 120, 56, 5, SSD1306_WHITE);
+      display.drawFastHLine(10, 19, 108, SSD1306_WHITE);
+      display.setCursor(12, 9);
+      display.print(c.type == VIDEO ? "VIDEO SLOT" : "IMAGE SLOT");
+
+      display.drawRoundRect(12, 28, 23, 20, 3, SSD1306_WHITE);
+      if (c.type == VIDEO) {
+        display.fillTriangle(20, 32, 20, 44, 29, 38, SSD1306_WHITE);
+      } else {
+        display.drawRect(19, 32, 9, 9, SSD1306_WHITE);
+        display.drawFastHLine(19, 35, 9, SSD1306_WHITE);
+      }
+
+      display.setCursor(42, 30);
+      display.print("SLOT ");
       display.print(currentContent + 1);
-      display.print(": not loaded");
+      display.setCursor(42, 43);
+      display.print("NOT LOADED");
       display.display();
     }
     return;
