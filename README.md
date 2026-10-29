@@ -164,7 +164,7 @@ python SparkyCompanion/tools/make_gallery.py path/to/v3.ino
 
 <samp>This writes `SparkyCompanion/gallery_media_private.h`. It is listed in `.gitignore` and should stay local. The tool also accepts OLED Animation Maker exports and raw bitmaps (`file.txt@WxH`), and supports `--order` and `--skip`. Without that file the sketch builds with a single placeholder screen.</samp>
 
-> Build with **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** when the private media header is present.
+<samp>> Build with **Tools → Partition Scheme → Huge APP (3MB No OTA/1MB SPIFFS)** when the private media header is present.</samp>
 
 <h2 align="center"><samp><b>Animation system</b></samp></h2>
 
